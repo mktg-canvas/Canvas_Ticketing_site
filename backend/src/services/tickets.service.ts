@@ -1,3 +1,4 @@
+import { Prisma, TicketCategory, TicketPriority, TicketStatus } from '@prisma/client'
 import { prisma } from '../lib/prisma'
 import { getSlaDeadline } from '../lib/sla'
 import { generateTicketNumber } from '../lib/ticketNumber'
@@ -26,8 +27,8 @@ export async function createTicket(
       ticket_number: ticketNumber,
       title: data.title,
       description: data.description,
-      category: data.category as any,
-      priority: data.priority as any,
+      category: data.category as TicketCategory,
+      priority: data.priority as TicketPriority,
       status: 'open',
       raised_by: actor.userId,
       company_id: user.company_id,
@@ -110,7 +111,7 @@ export async function listTickets(
   const take = 20
   const skip = (page - 1) * take
 
-  const where: any = {}
+  const where: Prisma.TicketWhereInput = {}
 
   // Role-based scoping
   if (actor.role === 'client') {
@@ -124,9 +125,9 @@ export async function listTickets(
   }
   // super_admin sees all — no scope filter
 
-  if (filters.status) where.status = filters.status
-  if (filters.priority) where.priority = filters.priority
-  if (filters.category) where.category = filters.category
+  if (filters.status) where.status = filters.status as TicketStatus
+  if (filters.priority) where.priority = filters.priority as TicketPriority
+  if (filters.category) where.category = filters.category as TicketCategory
   if (filters.companyId) where.company_id = filters.companyId
   if (filters.assignedTo) where.assigned_to = filters.assignedTo
 
@@ -177,7 +178,7 @@ export async function updateTicketStatus(
   const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } })
   if (!ticket) throw { status: 404, message: 'Ticket not found' }
 
-  const updateData: any = { status: newStatus as any }
+  const updateData: { status: TicketStatus; resolved_at?: Date; closed_at?: Date } = { status: newStatus as TicketStatus }
   if (newStatus === 'resolved') updateData.resolved_at = new Date()
   if (newStatus === 'closed') updateData.closed_at = new Date()
 

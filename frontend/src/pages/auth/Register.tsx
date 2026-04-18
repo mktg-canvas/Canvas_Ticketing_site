@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { Eye, EyeOff, Ticket } from 'lucide-react'
+import { isAxiosError } from 'axios'
 import api from '../../lib/axios'
 
 interface RegisterForm {
@@ -22,8 +23,8 @@ export default function Register() {
     try {
       await api.post('/auth/register', data)
       navigate('/login', { state: { registered: true } })
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Registration failed.')
+    } catch (err: unknown) {
+      setError(isAxiosError(err) ? err.response?.data?.error || 'Registration failed.' : 'Registration failed.')
     }
   }
 

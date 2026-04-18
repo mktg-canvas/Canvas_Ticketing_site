@@ -14,7 +14,7 @@ export default function AdminDashboard() {
   const open = tickets.filter((t: any) => t.status === 'open').length
   const inProgress = tickets.filter((t: any) => t.status === 'in_progress').length
   const resolvedToday = tickets.filter((t: any) => {
-    if (t.status !== 'resolved') return false
+    if (t.status !== 'resolved' || !t.resolved_at) return false
     const d = new Date(t.resolved_at)
     const now = new Date()
     return d.toDateString() === now.toDateString()
