@@ -1,0 +1,45 @@
+#!/bin/sh
+# Auto-updates dev-memory.md after every git commit
+
+MEMORY_FILE="dev-memory.md"
+SEPARATOR="<!-- Auto-appended by .githooks/post-commit — do not edit below this line manually -->"
+
+# Gather commit info
+HASH=$(git rev-parse --short HEAD)
+FULL_HASH=$(git rev-parse HEAD)
+MSG=$(git log -1 --format="%s")
+AUTHOR=$(git log -1 --format="%an")
+DATE=$(git log -1 --format="%cd" --date=format:"%Y-%m-%d %H:%M")
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+FILES_CHANGED=$(git diff-tree --no-commit-id -r --name-only HEAD | head -20)
+STATS=$(git diff-tree --no-commit-id -r --shortstat HEAD)
+
+# Build the new entry
+ENTRY=$(cat <<EOF
+
+### \`$HASH\` — $DATE
+**Branch:** \`$BRANCH\`
+**Author:** $AUTHOR
+**Message:** $MSG
+
+**Changed files:**
+\`\`\`
+$FILES_CHANGED
+\`\`\`
+**Stats:** $STATS
+
+---
+EOF
+)
+
+# Insert the new entry right after the separator line
+awk -v sep="$SEPARATOR" -v entry="$ENTRY" '
+  { print }
+  $0 == sep { print entry }
+' "$MEMORY_FILE" > "${MEMORY_FILE}.tmp" && mv "${MEMORY_FILE}.tmp" "$MEMORY_FILE"
+
+# Stage the updated memory file as part of this commit
+git add "$MEMORY_FILE"
+git commit --amend --no-edit --no-verify -q
+
+echo "✓ dev-memory.md updated for commit $HASH"
