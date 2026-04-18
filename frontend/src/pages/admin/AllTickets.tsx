@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, Filter } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { useTickets } from '../../hooks/useTickets'
 import TicketCard from '../../components/tickets/TicketCard'
 

@@ -1,5 +1,9 @@
-import axios from 'axios'
+import axios, { type InternalAxiosRequestConfig } from 'axios'
 import { useAuthStore } from '../store/authStore'
+
+interface RetryConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean
+}
 
 const api = axios.create({
   baseURL: '/api',
@@ -18,7 +22,7 @@ let queue: Array<(token: string) => void> = []
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
-    const original = error.config
+    const original = error.config as RetryConfig
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true
       if (refreshing) {

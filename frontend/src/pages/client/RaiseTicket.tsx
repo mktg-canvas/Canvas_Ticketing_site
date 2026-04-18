@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { ArrowLeft, Paperclip, X } from 'lucide-react'
 import { useState, useRef } from 'react'
+import { isAxiosError } from 'axios'
 import { useCreateTicket } from '../../hooks/useTickets'
 
 const CATEGORIES = ['hvac','electrical','plumbing','internet','housekeeping','furniture','security','access','billing','other']
@@ -28,8 +29,8 @@ export default function RaiseTicket() {
     try {
       await mutateAsync(fd)
       navigate('/client/tickets')
-    } catch (e: any) {
-      setError(e.response?.data?.error || 'Failed to raise ticket')
+    } catch (e: unknown) {
+      setError(isAxiosError(e) ? e.response?.data?.error || 'Failed to raise ticket' : 'Failed to raise ticket')
     }
   }
 

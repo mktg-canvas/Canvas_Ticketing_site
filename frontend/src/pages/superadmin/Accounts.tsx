@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Plus, X, Building2, Users, UserCheck } from 'lucide-react'
-import { useCompanies, useCreateCompany, useUpdateCompany } from '../../hooks/useCompanies'
+import { isAxiosError } from 'axios'
+import { useCompanies, useCreateCompany } from '../../hooks/useCompanies'
 import { useUsers, useCreateUser, useDeactivateUser, useUpdateUser } from '../../hooks/useUsers'
 
 const TABS = [
@@ -66,7 +67,7 @@ export default function Accounts() {
     try {
       await createCompany({ name: form.name, officeLocation: form.officeLocation, assignedAdminId: form.assignedAdminId || undefined })
       setShowModal(null); setForm({})
-    } catch (e: any) { setError(e.response?.data?.error || 'Failed') }
+    } catch (e: unknown) { setError(isAxiosError(e) ? e.response?.data?.error || 'Failed' : 'Failed') }
   }
 
   async function handleCreateUser(role: 'admin' | 'client') {
@@ -74,7 +75,7 @@ export default function Accounts() {
     try {
       await createUser({ name: form.name, email: form.email, password: form.password, role, companyId: form.companyId || undefined })
       setShowModal(null); setForm({})
-    } catch (e: any) { setError(e.response?.data?.error || 'Failed') }
+    } catch (e: unknown) { setError(isAxiosError(e) ? e.response?.data?.error || 'Failed' : 'Failed') }
   }
 
   async function handleAssign() {
@@ -82,7 +83,7 @@ export default function Accounts() {
     try {
       await updateUser({ id: selectedUser.id, companyId: form.companyId })
       setShowModal(null); setForm({}); setSelectedUser(null)
-    } catch (e: any) { setError(e.response?.data?.error || 'Failed') }
+    } catch (e: unknown) { setError(isAxiosError(e) ? e.response?.data?.error || 'Failed' : 'Failed') }
   }
 
   return (

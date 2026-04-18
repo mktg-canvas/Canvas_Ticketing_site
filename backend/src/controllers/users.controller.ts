@@ -15,8 +15,9 @@ export async function listUsers(req: AuthRequest, res: Response): Promise<void> 
   try {
     const users = await usersService.listUsers(req.user!.role, req.user!.userId)
     res.json({ users })
-  } catch (err: any) {
-    res.status(500).json({ error: err.message })
+  } catch (err: unknown) {
+    const e = err as { message?: string }
+    res.status(500).json({ error: e.message || 'Internal server error' })
   }
 }
 
@@ -36,8 +37,9 @@ export async function createUser(req: AuthRequest, res: Response): Promise<void>
   try {
     const user = await usersService.createUser(parsed.data)
     res.status(201).json({ user })
-  } catch (err: any) {
-    res.status(err.status || 500).json({ error: err.message })
+  } catch (err: unknown) {
+    const e = err as { status?: number; message?: string }
+    res.status(e.status || 500).json({ error: e.message || 'Internal server error' })
   }
 }
 
@@ -45,8 +47,9 @@ export async function updateUser(req: AuthRequest, res: Response): Promise<void>
   try {
     const user = await usersService.updateUser(req.params.id as string, req.body)
     res.json({ user })
-  } catch (err: any) {
-    res.status(500).json({ error: err.message })
+  } catch (err: unknown) {
+    const e = err as { message?: string }
+    res.status(500).json({ error: e.message || 'Internal server error' })
   }
 }
 
@@ -54,7 +57,8 @@ export async function deactivateUser(req: AuthRequest, res: Response): Promise<v
   try {
     const user = await usersService.deactivateUser(req.params.id as string)
     res.json({ user })
-  } catch (err: any) {
-    res.status(500).json({ error: err.message })
+  } catch (err: unknown) {
+    const e = err as { message?: string }
+    res.status(500).json({ error: e.message || 'Internal server error' })
   }
 }

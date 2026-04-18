@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { Eye, EyeOff, Ticket } from 'lucide-react'
+import { isAxiosError } from 'axios'
 import api from '../../lib/axios'
 import { useAuthStore } from '../../store/authStore'
 import type { Role } from '../../types'
@@ -32,8 +33,8 @@ export default function Login() {
         super_admin: '/superadmin/dashboard',
       }
       navigate(routes[user.role as Role])
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Login failed. Please try again.')
+    } catch (err: unknown) {
+      setError(isAxiosError(err) ? err.response?.data?.error || 'Login failed. Please try again.' : 'Login failed. Please try again.')
     }
   }
 
