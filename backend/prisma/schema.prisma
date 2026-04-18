@@ -142,7 +142,7 @@ model TicketActivity {
   is_internal   Boolean      @default(false)
   created_at    DateTime     @default(now()) @db.Timestamptz
 
-  ticket Ticket @relation(fields: [ticket_id], references: [id])
+  ticket Ticket @relation(fields: [ticket_id], references: [id], onDelete: Cascade)
   actor  User   @relation(fields: [actor_id], references: [id])
 
   @@map("ticket_activities")
@@ -158,7 +158,7 @@ model Attachment {
   mime_type   String?  @db.VarChar(100)
   created_at  DateTime @default(now()) @db.Timestamptz
 
-  ticket   Ticket @relation(fields: [ticket_id], references: [id])
+  ticket   Ticket @relation(fields: [ticket_id], references: [id], onDelete: Cascade)
   uploader User   @relation(fields: [uploaded_by], references: [id])
 
   @@map("attachments")
@@ -172,7 +172,7 @@ model Rating {
   feedback     String?
   submitted_at DateTime @default(now()) @db.Timestamptz
 
-  ticket    Ticket @relation(fields: [ticket_id], references: [id])
+  ticket    Ticket @relation(fields: [ticket_id], references: [id], onDelete: Cascade)
   submitter User   @relation(fields: [submitted_by], references: [id])
 
   @@map("ratings")
@@ -188,7 +188,7 @@ model Notification {
   created_at DateTime         @default(now()) @db.Timestamptz
 
   user   User    @relation(fields: [user_id], references: [id])
-  ticket Ticket? @relation(fields: [ticket_id], references: [id])
+  ticket Ticket? @relation(fields: [ticket_id], references: [id], onDelete: SetNull)
 
   @@map("notifications")
 }

@@ -36,6 +36,16 @@ export function useCreateTicket() {
   })
 }
 
+export function useDeleteTicket() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/tickets/${id}`)
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['tickets'] }),
+  })
+}
+
 export function useUpdateStatus() {
   const qc = useQueryClient()
   return useMutation({

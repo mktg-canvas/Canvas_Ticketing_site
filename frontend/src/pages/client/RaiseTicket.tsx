@@ -49,7 +49,7 @@ export default function RaiseTicket() {
       <h1 className="text-base font-semibold mb-1" style={{ color: '#e8eaf0' }}>Raise a Ticket</h1>
       <p className="text-xs mb-6" style={{ color: '#8b92a5' }}>Describe your issue and our team will respond promptly.</p>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+      <form onSubmit={handleSubmit(onSubmit)} onKeyDown={e => { if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') e.preventDefault() }} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium" style={{ color: '#8b92a5' }}>Title *</label>
           <input {...register('title', { required: 'Title is required' })} placeholder="Brief subject of the issue"

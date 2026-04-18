@@ -98,6 +98,15 @@ export async function addComment(req: AuthRequest, res: Response): Promise<void>
   }
 }
 
+export async function deleteTicket(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    await ticketsService.deleteTicket(req.user!, req.params.id as string)
+    res.status(204).send()
+  } catch (err: any) {
+    res.status(err.status || 500).json({ error: err.message })
+  }
+}
+
 export async function uploadAttachment(req: AuthRequest, res: Response): Promise<void> {
   const file = req.file
   if (!file) { res.status(400).json({ error: 'No file uploaded' }); return }

@@ -3,6 +3,7 @@ import { Plus, Ticket, Clock, CheckCircle } from 'lucide-react'
 import { useTickets } from '../../hooks/useTickets'
 import { useAuthStore } from '../../store/authStore'
 import TicketCard from '../../components/tickets/TicketCard'
+import ProfileMenu from '../../components/shared/ProfileMenu'
 
 export default function ClientDashboard() {
   const user = useAuthStore((s) => s.user)
@@ -21,11 +22,14 @@ export default function ClientDashboard() {
           <h1 className="text-base font-semibold" style={{ color: '#e8eaf0' }}>Hello, {user?.name}</h1>
           <p className="text-xs mt-0.5" style={{ color: '#8b92a5' }}>Canvas Workspace Support</p>
         </div>
-        <button onClick={() => navigate('/client/raise-ticket')}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold"
-          style={{ background: '#4f8ef7', color: '#fff', minHeight: '44px' }}>
-          <Plus size={16} /> Raise Ticket
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate('/client/raise-ticket')}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold"
+            style={{ background: '#4f8ef7', color: '#fff', minHeight: '44px' }}>
+            <Plus size={16} /> Raise Ticket
+          </button>
+          <ProfileMenu />
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-3 mb-6">
@@ -63,7 +67,11 @@ export default function ClientDashboard() {
       ) : (
         <div className="flex flex-col gap-3">
           {tickets.slice(0, 5).map((t: any) => (
-            <TicketCard key={t.id} ticket={t} linkTo={`/client/tickets/${t.id}`} />
+            <TicketCard
+              key={t.id}
+              ticket={t}
+              linkTo={`/client/tickets/${t.id}`}
+            />
           ))}
         </div>
       )}

@@ -83,8 +83,8 @@ export async function refresh(req: Request, res: Response): Promise<void> {
   }
 
   try {
-    const { accessToken } = await authService.refreshAccessToken(token)
-    res.json({ accessToken })
+    const { accessToken, user } = await authService.refreshAccessToken(token)
+    res.json({ accessToken, user })
   } catch (err: any) {
     res.status(401).json({ error: err.message || 'Token refresh failed' })
   }
