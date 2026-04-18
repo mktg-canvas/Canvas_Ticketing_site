@@ -72,7 +72,12 @@ export async function refreshAccessToken(refreshToken: string) {
     companyId: payload.companyId,
   })
 
-  return { accessToken: newAccessToken }
+  const user = await prisma.user.findUnique({ where: { id: payload.userId } })
+
+  return {
+    accessToken: newAccessToken,
+    user: user ? { id: user.id, name: user.name, email: user.email, role: user.role, companyId: user.company_id } : null,
+  }
 }
 
 export async function logoutUser(userId: string) {

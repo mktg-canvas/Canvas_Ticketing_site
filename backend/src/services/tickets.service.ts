@@ -278,6 +278,12 @@ export async function addComment(
   return getTicketById(ticketId)
 }
 
+export async function deleteTicket(actor: JwtPayload, ticketId: string) {
+  const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } })
+  if (!ticket) throw { status: 404, message: 'Ticket not found' }
+  await prisma.ticket.delete({ where: { id: ticketId } })
+}
+
 export async function uploadAttachment(
   actor: JwtPayload,
   ticketId: string,

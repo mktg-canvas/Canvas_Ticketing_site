@@ -3,6 +3,7 @@ import { Ticket, Clock, CheckCircle, AlertTriangle } from 'lucide-react'
 import { useTickets } from '../../hooks/useTickets'
 import TicketCard from '../../components/tickets/TicketCard'
 import { useAuthStore } from '../../store/authStore'
+import ProfileMenu from '../../components/shared/ProfileMenu'
 
 export default function AdminDashboard() {
   const navigate = useNavigate()
@@ -33,6 +34,7 @@ export default function AdminDashboard() {
             <h1 className="text-base font-semibold" style={{ color: '#e8eaf0' }}>Admin Panel</h1>
             <p className="text-xs" style={{ color: '#8b92a5' }}>{user?.name}</p>
           </div>
+          <ProfileMenu />
         </div>
 
         {/* KPI */}

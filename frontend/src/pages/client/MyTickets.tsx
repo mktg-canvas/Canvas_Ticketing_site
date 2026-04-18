@@ -42,7 +42,9 @@ export default function MyTickets() {
         <p className="text-center py-12 text-sm" style={{ color: '#565e72' }}>No tickets found.</p>
       ) : (
         <div className="flex flex-col gap-3">
-          {tickets.map((t: any) => <TicketCard key={t.id} ticket={t} linkTo={`/client/tickets/${t.id}`} />)}
+          {tickets.map((t: any) => (
+            <TicketCard key={t.id} ticket={t} linkTo={`/client/tickets/${t.id}`} />
+          ))}
         </div>
       )}
     </div>

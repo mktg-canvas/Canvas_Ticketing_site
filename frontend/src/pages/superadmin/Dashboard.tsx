@@ -3,6 +3,7 @@ import { Building2, Users, Ticket, Settings } from 'lucide-react'
 import { useTickets } from '../../hooks/useTickets'
 import { useCompanies } from '../../hooks/useCompanies'
 import { useUsers } from '../../hooks/useUsers'
+import ProfileMenu from '../../components/shared/ProfileMenu'
 
 export default function SuperAdminDashboard() {
   const navigate = useNavigate()
@@ -30,11 +31,14 @@ export default function SuperAdminDashboard() {
             <h1 className="text-base font-semibold" style={{ color: '#e8eaf0' }}>Super Admin</h1>
             <p className="text-xs" style={{ color: '#8b92a5' }}>Global overview — all offices</p>
           </div>
-          <button onClick={() => navigate('/superadmin/accounts')}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
-            style={{ background: '#4f8ef7', color: '#fff' }}>
-            <Settings size={15} /> Manage Accounts
-          </button>
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate('/superadmin/accounts')}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
+              style={{ background: '#4f8ef7', color: '#fff' }}>
+              <Settings size={15} /> Manage Accounts
+            </button>
+            <ProfileMenu />
+          </div>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
-import { useTickets } from '../../hooks/useTickets'
+import { useTickets, useDeleteTicket } from '../../hooks/useTickets'
 import { useCompanies } from '../../hooks/useCompanies'
 import TicketCard from '../../components/tickets/TicketCard'
 
@@ -14,6 +14,19 @@ export default function SuperAdminAllTickets() {
   const { data, isLoading } = useTickets({ ...(status !== 'all' && { status }), ...(companyId && { companyId }) })
   const { data: companies = [] } = useCompanies()
   const tickets = data?.tickets || []
+  const { mutate: rawDelete } = useDeleteTicket()
+  const [failedId, setFailedId] = useState<string | null>(null)
+  const [failedMsg, setFailedMsg] = useState<string>('')
+
+  function deleteTicket(id: string) {
+    setFailedId(null)
+    rawDelete(id, {
+      onError: (err: any) => {
+        setFailedId(id)
+        setFailedMsg(err.response?.data?.error || err.message || 'Delete failed')
+      },
+    })
+  }
 
   return (
     <div className="min-h-screen p-4 md:p-6" style={{ background: '#0f1117' }}>
@@ -49,7 +62,15 @@ export default function SuperAdminAllTickets() {
           <p className="text-center py-12 text-sm" style={{ color: '#565e72' }}>No tickets found.</p>
         ) : (
           <div className="flex flex-col gap-3">
-            {tickets.map((t: any) => <TicketCard key={t.id} ticket={t} linkTo={`/superadmin/tickets/${t.id}`} />)}
+            {tickets.map((t: any) => (
+              <TicketCard
+                key={t.id}
+                ticket={t}
+                linkTo={`/superadmin/tickets/${t.id}`}
+                onDelete={deleteTicket}
+                deleteError={failedId === t.id ? failedMsg : null}
+              />
+            ))}
           </div>
         )}
       </div>
