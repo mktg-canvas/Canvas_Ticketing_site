@@ -40,37 +40,37 @@ export default function RaiseTicket() {
     setFiles(prev => [...prev, ...arr])
   }
 
-  const inputStyle = { background: '#262c3a', borderColor: '#2e3545', color: '#e8eaf0' }
+  const inputStyle = { background: 'var(--color-bg3)', borderColor: 'var(--color-bg4)', color: 'var(--color-txt1)' }
 
   return (
-    <div className="min-h-screen p-4 md:p-6 max-w-2xl mx-auto" style={{ background: '#0f1117' }}>
-      <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm mb-6" style={{ color: '#8b92a5' }}>
+    <div className="min-h-screen p-4 md:p-6 max-w-2xl mx-auto" style={{ background: 'var(--color-bg0)' }}>
+      <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm mb-6" style={{ color: 'var(--color-txt2)' }}>
         <ArrowLeft size={16} /> Back
       </button>
-      <h1 className="text-base font-semibold mb-1" style={{ color: '#e8eaf0' }}>Raise a Ticket</h1>
-      <p className="text-xs mb-6" style={{ color: '#8b92a5' }}>Describe your issue and our team will respond promptly.</p>
+      <h1 className="text-base font-semibold mb-1" style={{ color: 'var(--color-txt1)' }}>Raise a Ticket</h1>
+      <p className="text-xs mb-6" style={{ color: 'var(--color-txt2)' }}>Describe your issue and our team will respond promptly.</p>
 
       <form onSubmit={handleSubmit(onSubmit)} onKeyDown={e => { if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') e.preventDefault() }} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium" style={{ color: '#8b92a5' }}>Title *</label>
+          <label className="text-xs font-medium" style={{ color: 'var(--color-txt2)' }}>Title *</label>
           <input {...register('title', { required: 'Title is required' })} placeholder="Brief subject of the issue"
             className="rounded-lg px-3 py-2.5 text-base outline-none border"
-            style={{ ...inputStyle, borderColor: errors.title ? '#f05252' : '#2e3545' }}
-            onFocus={e => e.target.style.borderColor = '#4f8ef7'}
-            onBlur={e => e.target.style.borderColor = errors.title ? '#f05252' : '#2e3545'} />
-          {errors.title && <p className="text-xs" style={{ color: '#f05252' }}>{errors.title.message}</p>}
+            style={{ ...inputStyle, borderColor: errors.title ? 'var(--color-danger)' : 'var(--color-bg4)' }}
+            onFocus={e => e.target.style.borderColor = 'var(--color-accent)'}
+            onBlur={e => e.target.style.borderColor = errors.title ? 'var(--color-danger)' : 'var(--color-bg4)'} />
+          {errors.title && <p className="text-xs" style={{ color: 'var(--color-danger)' }}>{errors.title.message}</p>}
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium" style={{ color: '#8b92a5' }}>Category</label>
+            <label className="text-xs font-medium" style={{ color: 'var(--color-txt2)' }}>Category</label>
             <select {...register('category')} className="rounded-lg px-3 py-2.5 text-base outline-none border capitalize"
               style={inputStyle}>
               {CATEGORIES.map(c => <option key={c} value={c} className="capitalize">{c.charAt(0).toUpperCase()+c.slice(1)}</option>)}
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium" style={{ color: '#8b92a5' }}>Priority</label>
+            <label className="text-xs font-medium" style={{ color: 'var(--color-txt2)' }}>Priority</label>
             <select {...register('priority')} className="rounded-lg px-3 py-2.5 text-base outline-none border"
               style={inputStyle}>
               {PRIORITIES.map(p => <option key={p} value={p} className="capitalize">{p.charAt(0).toUpperCase()+p.slice(1)}</option>)}
@@ -79,33 +79,33 @@ export default function RaiseTicket() {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium" style={{ color: '#8b92a5' }}>Description *</label>
+          <label className="text-xs font-medium" style={{ color: 'var(--color-txt2)' }}>Description *</label>
           <textarea {...register('description', { required: 'Description required', minLength: { value: 20, message: 'At least 20 characters' } })}
             placeholder="Describe the issue in detail..." rows={5}
             className="rounded-lg px-3 py-2.5 text-base outline-none border resize-none"
-            style={{ ...inputStyle, borderColor: errors.description ? '#f05252' : '#2e3545' }}
-            onFocus={e => e.target.style.borderColor = '#4f8ef7'}
-            onBlur={e => e.target.style.borderColor = errors.description ? '#f05252' : '#2e3545'} />
-          {errors.description && <p className="text-xs" style={{ color: '#f05252' }}>{errors.description.message}</p>}
+            style={{ ...inputStyle, borderColor: errors.description ? 'var(--color-danger)' : 'var(--color-bg4)' }}
+            onFocus={e => e.target.style.borderColor = 'var(--color-accent)'}
+            onBlur={e => e.target.style.borderColor = errors.description ? 'var(--color-danger)' : 'var(--color-bg4)'} />
+          {errors.description && <p className="text-xs" style={{ color: 'var(--color-danger)' }}>{errors.description.message}</p>}
         </div>
 
         {/* Attachments */}
         <div className="flex flex-col gap-2">
-          <label className="text-xs font-medium" style={{ color: '#8b92a5' }}>Attachments (optional, max 5)</label>
+          <label className="text-xs font-medium" style={{ color: 'var(--color-txt2)' }}>Attachments (optional, max 5)</label>
           <input ref={fileRef} type="file" multiple accept="image/*,.pdf" className="hidden" onChange={e => addFiles(e.target.files)} />
           <button type="button" onClick={() => fileRef.current?.click()}
             className="flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm"
-            style={{ background: '#262c3a', borderColor: '#2e3545', color: '#8b92a5' }}>
+            style={{ background: 'var(--color-bg3)', borderColor: 'var(--color-bg4)', color: 'var(--color-txt2)' }}>
             <Paperclip size={15} /> Attach files
           </button>
           {files.length > 0 && (
             <div className="flex flex-col gap-1">
               {files.map((f, i) => (
                 <div key={i} className="flex items-center justify-between px-3 py-1.5 rounded-lg"
-                  style={{ background: '#262c3a' }}>
-                  <span className="text-xs truncate" style={{ color: '#e8eaf0' }}>{f.name}</span>
+                  style={{ background: 'var(--color-bg3)' }}>
+                  <span className="text-xs truncate" style={{ color: 'var(--color-txt1)' }}>{f.name}</span>
                   <button type="button" onClick={() => setFiles(prev => prev.filter((_, j) => j !== i))}>
-                    <X size={14} style={{ color: '#565e72' }} />
+                    <X size={14} style={{ color: 'var(--color-txt3)' }} />
                   </button>
                 </div>
               ))}
@@ -113,11 +113,11 @@ export default function RaiseTicket() {
           )}
         </div>
 
-        {error && <p className="text-sm rounded-lg px-3 py-2" style={{ background: 'rgba(240,82,82,0.1)', color: '#f05252' }}>{error}</p>}
+        {error && <p className="text-sm rounded-lg px-3 py-2" style={{ background: 'var(--bg-danger-10)', color: 'var(--color-danger)' }}>{error}</p>}
 
         <button type="submit" disabled={isPending}
           className="w-full rounded-lg py-3 text-sm font-semibold disabled:opacity-60"
-          style={{ background: '#4f8ef7', color: '#fff', minHeight: '48px' }}>
+          style={{ background: 'var(--color-accent)', color: '#fff', minHeight: '48px' }}>
           {isPending ? 'Submitting...' : 'Submit Ticket'}
         </button>
       </form>

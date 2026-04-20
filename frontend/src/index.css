@@ -1,6 +1,21 @@
 @import "tailwindcss";
 
 @theme {
+  --color-bg0: var(--color-bg0);
+  --color-bg1: var(--color-bg1);
+  --color-bg2: var(--color-bg2);
+  --color-bg3: var(--color-bg3);
+  --color-bg4: var(--color-bg4);
+  --color-txt1: var(--color-txt1);
+  --color-txt2: var(--color-txt2);
+  --color-txt3: var(--color-txt3);
+  --color-accent: var(--color-accent);
+  --color-success: var(--color-success);
+  --color-warning: var(--color-warning);
+  --color-danger: var(--color-danger);
+}
+
+:root {
   --color-bg0: #0f1117;
   --color-bg1: #181c24;
   --color-bg2: #1f2330;
@@ -13,24 +28,68 @@
   --color-success: #2ecc8a;
   --color-warning: #f5a623;
   --color-danger: #f05252;
+
+  --bg-danger-15: rgba(240, 82, 82, 0.15);
+  --bg-danger-10: rgba(240, 82, 82, 0.1);
+  --bg-accent-15: rgba(79, 142, 247, 0.15);
+  --bg-warning-30: rgba(245, 166, 35, 0.3);
+  --bg-warning-15: rgba(245, 166, 35, 0.15);
+  --bg-warning-05: rgba(245, 166, 35, 0.05);
+  --bg-success-15: rgba(46, 204, 138, 0.15);
+  --bg-overlay-70: rgba(0, 0, 0, 0.7);
+  --bg-overlay-60: rgba(0, 0, 0, 0.6);
+}
+
+:root.light {
+  --color-bg0: #f3f4f6; /* bg-gray-100 */
+  --color-bg1: #ffffff; /* white */
+  --color-bg2: #f9fafb; /* bg-gray-50 */
+  --color-bg3: #e5e7eb; /* bg-gray-200 */
+  --color-bg4: #d1d5db; /* bg-gray-300 */
+  --color-txt1: #111827; /* text-gray-900 */
+  --color-txt2: #4b5563; /* text-gray-600 */
+  --color-txt3: #9ca3af; /* text-gray-400 */
+  --color-accent: #3b82f6; /* blue-500 */
+  --color-success: #10b981; /* emerald-500 */
+  --color-warning: #f59e0b; /* amber-500 */
+  --color-danger: #ef4444; /* red-500 */
+
+  /* Adjusted alphas for light mode to maintain contrast */
+  --bg-danger-15: rgba(239, 68, 68, 0.15);
+  --bg-danger-10: rgba(239, 68, 68, 0.1);
+  --bg-accent-15: rgba(59, 130, 246, 0.15);
+  --bg-warning-30: rgba(245, 158, 11, 0.3);
+  --bg-warning-15: rgba(245, 158, 11, 0.15);
+  --bg-warning-05: rgba(245, 158, 11, 0.05);
+  --bg-success-15: rgba(16, 185, 129, 0.15);
+  --bg-overlay-70: rgba(0, 0, 0, 0.4); /* Less heavy overlay on light mode */
+  --bg-overlay-60: rgba(0, 0, 0, 0.3);
 }
 
 * { box-sizing: border-box; }
 
 body {
-  background-color: #0f1117;
-  color: #e8eaf0;
+  background-color: var(--color-bg0);
+  color: var(--color-txt1);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 14px;
   line-height: 1.6;
   margin: 0;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 #root { min-height: 100svh; }
 
-input, textarea, select { font-size: 16px; }
+input, textarea, select { 
+  font-size: 16px; 
+}
+
+/* Base style for inputs to have nice transition when changing theme */
+input, select, textarea, button, div, span, p, h1, h2, h3, h4, h5, h6 {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: #181c24; }
-::-webkit-scrollbar-thumb { background: #2e3545; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #4f8ef7; }
+::-webkit-scrollbar-track { background: var(--color-bg1); }
+::-webkit-scrollbar-thumb { background: var(--color-bg4); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-accent); }

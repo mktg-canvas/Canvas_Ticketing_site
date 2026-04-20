@@ -16,16 +16,16 @@ export default function ClientDashboard() {
   const resolved = tickets.filter((t: any) => ['resolved','closed'].includes(t.status)).length
 
   return (
-    <div className="min-h-screen p-4 md:p-6 max-w-3xl mx-auto" style={{ background: '#0f1117' }}>
+    <div className="min-h-screen p-4 md:p-6 max-w-3xl mx-auto" style={{ background: 'var(--color-bg0)' }}>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-base font-semibold" style={{ color: '#e8eaf0' }}>Hello, {user?.name}</h1>
-          <p className="text-xs mt-0.5" style={{ color: '#8b92a5' }}>Canvas Workspace Support</p>
+          <h1 className="text-base font-semibold" style={{ color: 'var(--color-txt1)' }}>Hello, {user?.name}</h1>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--color-txt2)' }}>Canvas Workspace Support</p>
         </div>
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/client/raise-ticket')}
             className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold"
-            style={{ background: '#4f8ef7', color: '#fff', minHeight: '44px' }}>
+            style={{ background: 'var(--color-accent)', color: '#fff', minHeight: '44px' }}>
             <Plus size={16} /> Raise Ticket
           </button>
           <ProfileMenu />
@@ -34,33 +34,33 @@ export default function ClientDashboard() {
 
       <div className="grid grid-cols-3 gap-3 mb-6">
         {[
-          { label: 'Open', count: open, icon: Ticket, color: '#f05252' },
-          { label: 'In Progress', count: inProgress, icon: Clock, color: '#f5a623' },
-          { label: 'Resolved', count: resolved, icon: CheckCircle, color: '#2ecc8a' },
+          { label: 'Open', count: open, icon: Ticket, color: 'var(--color-danger)' },
+          { label: 'In Progress', count: inProgress, icon: Clock, color: 'var(--color-warning)' },
+          { label: 'Resolved', count: resolved, icon: CheckCircle, color: 'var(--color-success)' },
         ].map(({ label, count, icon: Icon, color }) => (
-          <div key={label} className="rounded-xl p-3 border text-center" style={{ background: '#181c24', borderColor: '#2e3545' }}>
+          <div key={label} className="rounded-xl p-3 border text-center" style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}>
             <Icon size={18} style={{ color, margin: '0 auto 4px' }} />
             <p className="text-xl font-bold" style={{ color }}>{count}</p>
-            <p className="text-xs" style={{ color: '#8b92a5' }}>{label}</p>
+            <p className="text-xs" style={{ color: 'var(--color-txt2)' }}>{label}</p>
           </div>
         ))}
       </div>
 
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold" style={{ color: '#e8eaf0' }}>My Tickets</h2>
-        <button onClick={() => navigate('/client/tickets')} className="text-xs" style={{ color: '#4f8ef7' }}>View all →</button>
+        <h2 className="text-sm font-semibold" style={{ color: 'var(--color-txt1)' }}>My Tickets</h2>
+        <button onClick={() => navigate('/client/tickets')} className="text-xs" style={{ color: 'var(--color-accent)' }}>View all →</button>
       </div>
 
       {isLoading ? (
         <div className="flex flex-col gap-3">
-          {[1,2,3].map(i => <div key={i} className="rounded-xl h-24 animate-pulse" style={{ background: '#1f2330' }} />)}
+          {[1,2,3].map(i => <div key={i} className="rounded-xl h-24 animate-pulse" style={{ background: 'var(--color-bg2)' }} />)}
         </div>
       ) : tickets.length === 0 ? (
-        <div className="text-center py-12 rounded-xl border" style={{ background: '#181c24', borderColor: '#2e3545' }}>
-          <Ticket size={32} style={{ color: '#565e72', margin: '0 auto 8px' }} />
-          <p className="text-sm mb-3" style={{ color: '#8b92a5' }}>No tickets yet</p>
+        <div className="text-center py-12 rounded-xl border" style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}>
+          <Ticket size={32} style={{ color: 'var(--color-txt3)', margin: '0 auto 8px' }} />
+          <p className="text-sm mb-3" style={{ color: 'var(--color-txt2)' }}>No tickets yet</p>
           <button onClick={() => navigate('/client/raise-ticket')}
-            className="px-4 py-2 rounded-lg text-sm" style={{ background: '#4f8ef7', color: '#fff' }}>
+            className="px-4 py-2 rounded-lg text-sm" style={{ background: 'var(--color-accent)', color: '#fff' }}>
             Raise your first ticket
           </button>
         </div>
