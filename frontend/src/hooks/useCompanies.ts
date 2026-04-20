@@ -32,3 +32,14 @@ export function useUpdateCompany() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['companies'] }),
   })
 }
+
+export function useDeactivateCompany() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.patch(`/companies/${id}/deactivate`)
+      return data.company
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['companies'] }),
+  })
+}

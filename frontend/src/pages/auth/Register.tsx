@@ -29,18 +29,18 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#0f1117' }}>
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--color-bg0)' }}>
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center gap-2 mb-8">
-          <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: '#4f8ef7' }}>
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'var(--color-accent)' }}>
             <Ticket size={20} color="white" />
           </div>
-          <span className="text-lg font-semibold" style={{ color: '#e8eaf0' }}>Canvas Workspace</span>
+          <span className="text-lg font-semibold" style={{ color: 'var(--color-txt1)' }}>Canvas Workspace</span>
         </div>
 
-        <div className="rounded-xl p-6 border" style={{ background: '#181c24', borderColor: '#2e3545' }}>
-          <h1 className="text-base font-semibold mb-1" style={{ color: '#e8eaf0' }}>Create account</h1>
-          <p className="text-sm mb-6" style={{ color: '#8b92a5' }}>Register as a client</p>
+        <div className="rounded-xl p-6 border" style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}>
+          <h1 className="text-base font-semibold mb-1" style={{ color: 'var(--color-txt1)' }}>Create account</h1>
+          <p className="text-sm mb-6" style={{ color: 'var(--color-txt2)' }}>Register as a client</p>
 
           <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
             {[
@@ -48,22 +48,22 @@ export default function Register() {
               { field: 'email' as const, label: 'Email', type: 'email', placeholder: 'you@company.com' },
             ].map(({ field, label, type, placeholder }) => (
               <div key={field} className="flex flex-col gap-1">
-                <label className="text-xs font-medium" style={{ color: '#8b92a5' }}>{label}</label>
+                <label className="text-xs font-medium" style={{ color: 'var(--color-txt2)' }}>{label}</label>
                 <input
                   {...register(field, { required: `${label} is required` })}
                   type={type}
                   placeholder={placeholder}
                   className="w-full rounded-lg px-3 py-2.5 text-base outline-none border transition-colors"
-                  style={{ background: '#262c3a', borderColor: errors[field] ? '#f05252' : '#2e3545', color: '#e8eaf0' }}
-                  onFocus={(e) => (e.target.style.borderColor = '#4f8ef7')}
-                  onBlur={(e) => (e.target.style.borderColor = errors[field] ? '#f05252' : '#2e3545')}
+                  style={{ background: 'var(--color-bg3)', borderColor: errors[field] ? 'var(--color-danger)' : 'var(--color-bg4)', color: 'var(--color-txt1)' }}
+                  onFocus={(e) => (e.target.style.borderColor = 'var(--color-accent)')}
+                  onBlur={(e) => (e.target.style.borderColor = errors[field] ? 'var(--color-danger)' : 'var(--color-bg4)')}
                 />
-                {errors[field] && <p className="text-xs" style={{ color: '#f05252' }}>{errors[field]?.message}</p>}
+                {errors[field] && <p className="text-xs" style={{ color: 'var(--color-danger)' }}>{errors[field]?.message}</p>}
               </div>
             ))}
 
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium" style={{ color: '#8b92a5' }}>Password</label>
+              <label className="text-xs font-medium" style={{ color: 'var(--color-txt2)' }}>Password</label>
               <div className="relative">
                 <input
                   {...register('password', {
@@ -73,19 +73,19 @@ export default function Register() {
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Min. 8 chars with uppercase & number"
                   className="w-full rounded-lg px-3 py-2.5 pr-10 text-base outline-none border transition-colors"
-                  style={{ background: '#262c3a', borderColor: errors.password ? '#f05252' : '#2e3545', color: '#e8eaf0' }}
-                  onFocus={(e) => (e.target.style.borderColor = '#4f8ef7')}
-                  onBlur={(e) => (e.target.style.borderColor = errors.password ? '#f05252' : '#2e3545')}
+                  style={{ background: 'var(--color-bg3)', borderColor: errors.password ? 'var(--color-danger)' : 'var(--color-bg4)', color: 'var(--color-txt1)' }}
+                  onFocus={(e) => (e.target.style.borderColor = 'var(--color-accent)')}
+                  onBlur={(e) => (e.target.style.borderColor = errors.password ? 'var(--color-danger)' : 'var(--color-bg4)')}
                 />
-                <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: '#565e72' }}>
+                <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-txt3)' }}>
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
-              {errors.password && <p className="text-xs" style={{ color: '#f05252' }}>{errors.password.message}</p>}
+              {errors.password && <p className="text-xs" style={{ color: 'var(--color-danger)' }}>{errors.password.message}</p>}
             </div>
 
             {error && (
-              <p className="text-sm rounded-lg px-3 py-2" style={{ background: 'rgba(240,82,82,0.1)', color: '#f05252' }}>
+              <p className="text-sm rounded-lg px-3 py-2" style={{ background: 'var(--bg-danger-10)', color: 'var(--color-danger)' }}>
                 {error}
               </p>
             )}
@@ -94,16 +94,16 @@ export default function Register() {
               type="submit"
               disabled={isSubmitting}
               className="w-full rounded-lg py-2.5 text-sm font-semibold transition-opacity disabled:opacity-60"
-              style={{ background: '#4f8ef7', color: '#fff', minHeight: '44px' }}
+              style={{ background: 'var(--color-accent)', color: '#fff', minHeight: '44px' }}
             >
               {isSubmitting ? 'Creating account...' : 'Create account'}
             </button>
           </form>
         </div>
 
-        <p className="text-center text-sm mt-4" style={{ color: '#8b92a5' }}>
+        <p className="text-center text-sm mt-4" style={{ color: 'var(--color-txt2)' }}>
           Already have an account?{' '}
-          <Link to="/login" className="hover:underline" style={{ color: '#4f8ef7' }}>Sign in</Link>
+          <Link to="/login" className="hover:underline" style={{ color: 'var(--color-accent)' }}>Sign in</Link>
         </p>
       </div>
     </div>

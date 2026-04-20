@@ -30,9 +30,26 @@ export async function createUser(data: {
   companyId?: string
 }) {
   const existing = await prisma.user.findUnique({ where: { email: data.email } })
-  if (existing) throw { status: 409, message: 'Email already registered' }
-
   const hash = await bcrypt.hash(data.password, 12)
+
+  if (existing) {
+    if (existing.is_active) {
+      throw { status: 409, message: 'Email already registered' }
+    }
+    // If inactive, reactivate and update the user
+    return prisma.user.update({
+      where: { id: existing.id },
+      data: {
+        name: data.name,
+        password_hash: hash,
+        role: data.role,
+        company_id: data.companyId ?? null,
+        is_active: true,
+      },
+      select: { id: true, name: true, email: true, role: true, company_id: true, created_at: true },
+    })
+  }
+
   return prisma.user.create({
     data: {
       name: data.name,

@@ -4,13 +4,13 @@ import * as authService from '../services/auth.service'
 import { AuthRequest } from '../types'
 
 const loginSchema = z.object({
-  email: z.string().email(),
+  email: z.string().email().trim().toLowerCase(),
   password: z.string().min(1),
 })
 
 const registerSchema = z.object({
   name: z.string().min(1),
-  email: z.string().email(),
+  email: z.string().email().trim().toLowerCase(),
   password: z
     .string()
     .min(8)

@@ -1,17 +1,17 @@
 const STATUS_STYLES: Record<string, { bg: string; color: string; label: string }> = {
-  open:         { bg: 'rgba(240,82,82,0.15)',   color: '#f05252', label: 'Open' },
-  acknowledged: { bg: 'rgba(79,142,247,0.15)',  color: '#4f8ef7', label: 'Acknowledged' },
-  in_progress:  { bg: 'rgba(245,166,35,0.15)',  color: '#f5a623', label: 'In Progress' },
-  on_hold:      { bg: '#2e3545',                color: '#8b92a5', label: 'On Hold' },
-  resolved:     { bg: 'rgba(46,204,138,0.15)',  color: '#2ecc8a', label: 'Resolved' },
-  closed:       { bg: '#2e3545',                color: '#565e72', label: 'Closed' },
+  open:         { bg: 'var(--bg-danger-15)',   color: 'var(--color-danger)', label: 'Open' },
+  acknowledged: { bg: 'var(--bg-accent-15)',  color: 'var(--color-accent)', label: 'Acknowledged' },
+  in_progress:  { bg: 'var(--bg-warning-15)',  color: 'var(--color-warning)', label: 'In Progress' },
+  on_hold:      { bg: 'var(--color-bg4)',                color: 'var(--color-txt2)', label: 'On Hold' },
+  resolved:     { bg: 'var(--bg-success-15)',  color: 'var(--color-success)', label: 'Resolved' },
+  closed:       { bg: 'var(--color-bg4)',                color: 'var(--color-txt3)', label: 'Closed' },
 }
 
 const PRIORITY_STYLES: Record<string, { color: string; label: string }> = {
-  critical: { color: '#f05252', label: 'Critical' },
-  high:     { color: '#f5a623', label: 'High' },
-  medium:   { color: '#4f8ef7', label: 'Medium' },
-  low:      { color: '#2ecc8a', label: 'Low' },
+  critical: { color: 'var(--color-danger)', label: 'Critical' },
+  high:     { color: 'var(--color-warning)', label: 'High' },
+  medium:   { color: 'var(--color-accent)', label: 'Medium' },
+  low:      { color: 'var(--color-success)', label: 'Low' },
 }
 
 export function StatusBadge({ status }: { status: string }) {
