@@ -62,17 +62,17 @@ export default function FmTicketDetail() {
     <div className="min-h-screen pb-10" style={{ background: 'var(--color-bg0)' }}>
 
       {/* Header */}
-      <div className="sticky top-0 z-10 px-4 py-3 flex items-center gap-3 border-b" style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}>
+      <div className="sticky top-0 z-10 px-4 py-3 flex items-center gap-2 border-b" style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}>
         <button onClick={() => navigate(-1)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg transition-colors hover:bg-[var(--color-bg3)]">
           <ArrowLeft size={18} style={{ color: 'var(--color-txt2)' }} />
         </button>
-        <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-lg" style={{ background: 'var(--color-bg3)', color: 'var(--color-txt2)' }}>
+        <span className="text-xs font-mono font-bold px-2 py-1 rounded-lg truncate max-w-[100px]" style={{ background: 'var(--color-bg3)', color: 'var(--color-txt2)' }}>
           {ticket.ticket_number}
         </span>
         <StatusBadge status={ticket.status} />
         <button
           onClick={() => setShowStatusSheet(true)}
-          className="ml-auto px-4 py-2 rounded-xl text-xs font-bold transition-opacity hover:opacity-90"
+          className="ml-auto shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-opacity hover:opacity-90"
           style={{ background: 'var(--color-accent)', color: '#fff' }}
         >
           Update Status
