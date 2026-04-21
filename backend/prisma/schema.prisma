@@ -110,6 +110,8 @@ model Ticket {
   description   String
   status        TicketStatus   @default(open)
   raised_by     String         @db.Uuid
+  opened_at     DateTime?      @db.Timestamptz
+  in_progress_at DateTime?     @db.Timestamptz
   closed_at     DateTime?      @db.Timestamptz
   created_at    DateTime       @default(now()) @db.Timestamptz
   updated_at    DateTime       @updatedAt @db.Timestamptz

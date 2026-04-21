@@ -39,11 +39,13 @@ export interface Ticket {
   building_id: string
   floor_id: string
   company_id: string
-  category: string
+  category: { id: string; name: string; slug: string } | string
   sub_category?: string
   description: string
   status: 'open' | 'in_progress' | 'closed'
   raised_by: string
+  opened_at?: string
+  in_progress_at?: string
   closed_at?: string
   created_at: string
   updated_at: string

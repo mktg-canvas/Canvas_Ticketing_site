@@ -12,7 +12,8 @@ export async function createTicket(
     companyId: string
     categoryId: string
     subCategory?: string
-    description: string
+    description?: string
+    status?: string
     files?: Express.Multer.File[]
   }
 ) {
@@ -26,8 +27,11 @@ export async function createTicket(
       company_id: data.companyId,
       category_id: data.categoryId,
       sub_category: data.subCategory ?? null,
-      description: data.description,
-      status: 'open',
+      description: data.description ?? '',
+      status: (data.status as TicketStatus) ?? 'open',
+      opened_at: (!data.status || data.status === 'open') ? new Date() : undefined,
+      in_progress_at: data.status === 'in_progress' ? new Date() : undefined,
+      closed_at: data.status === 'closed' ? new Date() : undefined,
       raised_by: actor.userId,
     },
   })
@@ -37,7 +41,7 @@ export async function createTicket(
       ticket_id: ticket.id,
       actor_id: actor.userId,
       activity_type: 'created',
-      new_value: 'open',
+      new_value: data.status ?? 'open',
     },
   })
 
@@ -132,8 +136,10 @@ export async function updateTicketStatus(actor: JwtPayload, ticketId: string, ne
   const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } })
   if (!ticket) throw { status: 404, message: 'Ticket not found' }
 
-  const updateData: { status: TicketStatus; closed_at?: Date } = { status: newStatus as TicketStatus }
-  if (newStatus === 'closed') updateData.closed_at = new Date()
+  const updateData: { status: TicketStatus; opened_at?: Date; in_progress_at?: Date; closed_at?: Date } = { status: newStatus as TicketStatus }
+  if (newStatus === 'open' && !ticket.opened_at) updateData.opened_at = new Date()
+  if (newStatus === 'in_progress' && !ticket.in_progress_at) updateData.in_progress_at = new Date()
+  if (newStatus === 'closed' && !ticket.closed_at) updateData.closed_at = new Date()
 
   const [updated] = await Promise.all([
     prisma.ticket.update({ where: { id: ticketId }, data: updateData }),

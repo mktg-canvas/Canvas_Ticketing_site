@@ -9,7 +9,8 @@ const createSchema = z.object({
   companyId: z.string().uuid(),
   categoryId: z.string().uuid(),
   subCategory: z.string().max(255).optional(),
-  description: z.string().min(5),
+  description: z.string().optional(),
+  status: z.enum(['open', 'in_progress', 'closed']).optional(),
 })
 
 const statusSchema = z.object({
