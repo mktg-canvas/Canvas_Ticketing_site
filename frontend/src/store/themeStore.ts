@@ -8,7 +8,7 @@ interface ThemeState {
 export const useThemeStore = create<ThemeState>((set) => {
   // Check local storage or default to true for dark mode
   const storedTheme = localStorage.getItem('theme')
-  const initialDark = storedTheme === 'light' ? false : true
+  const initialDark = storedTheme === 'dark' ? true : false
 
   // Apply initial theme
   if (!initialDark) {
