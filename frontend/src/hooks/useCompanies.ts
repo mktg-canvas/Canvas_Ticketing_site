@@ -1,11 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../lib/axios'
 
-export function useCompanies() {
+export function useCompanies(buildingId?: string) {
   return useQuery({
-    queryKey: ['companies'],
+    queryKey: ['companies', buildingId],
     queryFn: async () => {
-      const { data } = await api.get('/companies')
+      const { data } = await api.get('/companies', { params: buildingId ? { buildingId } : {} })
       return data.companies
     },
   })
@@ -14,8 +14,8 @@ export function useCompanies() {
 export function useCreateCompany() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (body: { name: string; officeLocation?: string; assignedAdminId?: string }) => {
-      const { data } = await api.post('/companies', body)
+    mutationFn: async ({ name, buildingId }: { name: string; buildingId?: string }) => {
+      const { data } = await api.post('/companies', { name, buildingId })
       return data.company
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['companies'] }),
@@ -25,8 +25,8 @@ export function useCreateCompany() {
 export function useUpdateCompany() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, ...body }: { id: string; name?: string; officeLocation?: string; assignedAdminId?: string }) => {
-      const { data } = await api.patch(`/companies/${id}`, body)
+    mutationFn: async ({ id, name, buildingId }: { id: string; name: string; buildingId?: string }) => {
+      const { data } = await api.patch(`/companies/${id}`, { name, buildingId })
       return data.company
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['companies'] }),

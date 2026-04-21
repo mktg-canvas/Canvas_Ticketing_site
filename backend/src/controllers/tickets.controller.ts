@@ -4,14 +4,16 @@ import * as ticketsService from '../services/tickets.service'
 import { AuthRequest } from '../types'
 
 const createSchema = z.object({
-  title: z.string().min(3).max(255),
-  description: z.string().min(20),
-  category: z.enum(['electrical','plumbing','internet','housekeeping','furniture','hvac','security','access','billing','other']),
-  priority: z.enum(['low','medium','high','critical']),
+  buildingId: z.string().uuid(),
+  floorId: z.string().uuid(),
+  companyId: z.string().uuid(),
+  categoryId: z.string().uuid(),
+  subCategory: z.string().max(255).optional(),
+  description: z.string().min(5),
 })
 
 const statusSchema = z.object({
-  status: z.enum(['open','acknowledged','in_progress','on_hold','resolved','closed']),
+  status: z.enum(['open','in_progress','closed']),
   comment: z.string().optional(),
 })
 
@@ -36,10 +38,10 @@ export async function listTickets(req: AuthRequest, res: Response): Promise<void
   try {
     const result = await ticketsService.listTickets(req.user!, {
       status: req.query.status as string,
-      priority: req.query.priority as string,
       category: req.query.category as string,
+      buildingId: req.query.buildingId as string,
+      floorId: req.query.floorId as string,
       companyId: req.query.companyId as string,
-      assignedTo: req.query.assignedTo as string,
       page: req.query.page ? Number(req.query.page) : 1,
     })
     res.json(result)
@@ -64,23 +66,7 @@ export async function updateStatus(req: AuthRequest, res: Response): Promise<voi
     return
   }
   try {
-    const ticket = await ticketsService.updateTicketStatus(
-      req.user!,
-      req.params.id as string,
-      parsed.data.status,
-      parsed.data.comment
-    )
-    res.json({ ticket })
-  } catch (err: any) {
-    res.status(err.status || 500).json({ error: err.message })
-  }
-}
-
-export async function assignTicket(req: AuthRequest, res: Response): Promise<void> {
-  const { adminId } = req.body
-  if (!adminId) { res.status(400).json({ error: 'adminId required' }); return }
-  try {
-    const ticket = await ticketsService.assignTicket(req.user!, req.params.id as string, adminId)
+    const ticket = await ticketsService.updateTicketStatus(req.user!, req.params.id as string, parsed.data.status, parsed.data.comment)
     res.json({ ticket })
   } catch (err: any) {
     res.status(err.status || 500).json({ error: err.message })

@@ -14,7 +14,7 @@ export function useUsers() {
 export function useCreateUser() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (body: { name: string; email: string; password: string; role: string; companyId?: string }) => {
+    mutationFn: async (body: { name: string; email: string; password: string; role: 'fm' | 'super_admin' }) => {
       const { data } = await api.post('/users', body)
       return data.user
     },
@@ -36,7 +36,7 @@ export function useDeactivateUser() {
 export function useUpdateUser() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, ...body }: { id: string; name?: string; email?: string; companyId?: string }) => {
+    mutationFn: async ({ id, ...body }: { id: string; name?: string }) => {
       const { data } = await api.patch(`/users/${id}`, body)
       return data.user
     },

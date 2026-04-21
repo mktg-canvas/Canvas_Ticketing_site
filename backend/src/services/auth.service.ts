@@ -9,7 +9,7 @@ const FAILED_PREFIX = 'failed:'
 const OTP_PREFIX = 'otp:'
 const REFRESH_PREFIX = 'refresh:'
 const MAX_ATTEMPTS = 5
-const LOCK_DURATION = 15 * 60 // 15 min
+const LOCK_DURATION = 15 * 60
 
 export async function loginUser(email: string, password: string) {
   const lockKey = `${LOCK_PREFIX}${email}`
@@ -36,28 +36,16 @@ export async function loginUser(email: string, password: string) {
   await redis.del(failedKey)
   await prisma.user.update({ where: { id: user.id }, data: { last_login: new Date() } })
 
-  const payload: JwtPayload = {
-    userId: user.id,
-    role: user.role as JwtPayload['role'],
-    companyId: user.company_id ?? undefined,
-  }
-
+  const payload: JwtPayload = { userId: user.id, role: user.role as JwtPayload['role'] }
   const accessToken = signAccessToken(payload)
   const refreshToken = signRefreshToken(payload)
 
-  // Store refresh token in Redis (7 days)
   await redis.set(`${REFRESH_PREFIX}${user.id}`, refreshToken, { ex: 7 * 24 * 60 * 60 })
 
   return {
     accessToken,
     refreshToken,
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      companyId: user.company_id,
-    },
+    user: { id: user.id, name: user.name, email: user.email, role: user.role },
   }
 }
 
@@ -66,17 +54,12 @@ export async function refreshAccessToken(refreshToken: string) {
   const stored = await redis.get(`${REFRESH_PREFIX}${payload.userId}`)
   if (stored !== refreshToken) throw { status: 401, message: 'Invalid refresh token' }
 
-  const newAccessToken = signAccessToken({
-    userId: payload.userId,
-    role: payload.role,
-    companyId: payload.companyId,
-  })
-
+  const newAccessToken = signAccessToken({ userId: payload.userId, role: payload.role })
   const user = await prisma.user.findUnique({ where: { id: payload.userId } })
 
   return {
     accessToken: newAccessToken,
-    user: user ? { id: user.id, name: user.name, email: user.email, role: user.role, companyId: user.company_id } : null,
+    user: user ? { id: user.id, name: user.name, email: user.email, role: user.role } : null,
   }
 }
 
@@ -86,12 +69,12 @@ export async function logoutUser(userId: string) {
 
 export async function sendPasswordResetOtp(email: string) {
   const user = await prisma.user.findUnique({ where: { email } })
-  if (!user) return // silent — don't reveal email existence
+  if (!user) return
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString()
-  await redis.set(`${OTP_PREFIX}${email}`, otp, { ex: 10 * 60 }) // 10 min
+  await redis.set(`${OTP_PREFIX}${email}`, otp, { ex: 10 * 60 })
 
-  return { otp, userName: user.name } // caller sends the email
+  return { otp, userName: user.name }
 }
 
 export async function resetPassword(email: string, otp: string, newPassword: string) {
@@ -104,21 +87,4 @@ export async function resetPassword(email: string, otp: string, newPassword: str
   const user = await prisma.user.findUnique({ where: { email } })
   if (user) await redis.del(`${REFRESH_PREFIX}${user.id}`)
   await redis.del(`${OTP_PREFIX}${email}`)
-}
-
-export async function registerClient(name: string, email: string, password: string) {
-  const existing = await prisma.user.findUnique({ where: { email } })
-  if (existing) throw { status: 409, message: 'Email already registered' }
-
-  const hash = await bcrypt.hash(password, 12)
-  const user = await prisma.user.create({
-    data: { name, email, password_hash: hash, role: 'client' },
-  })
-
-  return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-  }
 }

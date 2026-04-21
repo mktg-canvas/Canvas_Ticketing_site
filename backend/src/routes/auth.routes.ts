@@ -6,7 +6,6 @@ import { authLimiter } from '../middleware/rateLimiter'
 const router = Router()
 
 router.post('/login', authLimiter, auth.login)
-router.post('/register', authLimiter, auth.register)
 router.post('/refresh', auth.refresh)
 router.post('/logout', authenticate, auth.logout)
 router.post('/forgot-password', authLimiter, auth.forgotPassword)
