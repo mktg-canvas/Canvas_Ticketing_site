@@ -70,17 +70,3 @@ export function useAddComment() {
     onSuccess: (_d, { id }) => qc.invalidateQueries({ queryKey: ['ticket', id] }),
   })
 }
-
-export function useAssignTicket() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: async ({ id, adminId }: { id: string; adminId: string }) => {
-      const { data } = await api.patch(`/tickets/${id}/assign`, { adminId })
-      return data.ticket
-    },
-    onSuccess: (_d, { id }) => {
-      qc.invalidateQueries({ queryKey: ['ticket', id] })
-      qc.invalidateQueries({ queryKey: ['tickets'] })
-    },
-  })
-}

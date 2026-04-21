@@ -8,17 +8,6 @@ const loginSchema = z.object({
   password: z.string().min(1),
 })
 
-const registerSchema = z.object({
-  name: z.string().min(1),
-  email: z.string().email().trim().toLowerCase(),
-  password: z
-    .string()
-    .min(8)
-    .regex(/[A-Z]/, 'Must contain uppercase')
-    .regex(/[0-9]/, 'Must contain number')
-    .regex(/[^A-Za-z0-9]/, 'Must contain special character'),
-})
-
 const resetSchema = z.object({
   email: z.string().email(),
   otp: z.string().length(6),
@@ -53,25 +42,6 @@ export async function login(req: Request, res: Response): Promise<void> {
     res.json({ accessToken, user })
   } catch (err: any) {
     res.status(err.status || 500).json({ error: err.message || 'Login failed' })
-  }
-}
-
-export async function register(req: Request, res: Response): Promise<void> {
-  const parsed = registerSchema.safeParse(req.body)
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.flatten().fieldErrors })
-    return
-  }
-
-  try {
-    const user = await authService.registerClient(
-      parsed.data.name,
-      parsed.data.email,
-      parsed.data.password
-    )
-    res.status(201).json({ user })
-  } catch (err: any) {
-    res.status(err.status || 500).json({ error: err.message || 'Registration failed' })
   }
 }
 

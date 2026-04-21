@@ -7,13 +7,12 @@ const router = Router()
 
 router.use(authenticate)
 
-router.post('/', authorize('client'), upload.array('files', 5), tickets.createTicket)
+router.post('/', authorize('fm'), upload.array('files', 5), tickets.createTicket)
 router.get('/', tickets.listTickets)
 router.get('/:id', tickets.getTicket)
 router.delete('/:id', authorize('super_admin'), tickets.deleteTicket)
-router.patch('/:id/status', authorize('admin', 'super_admin'), tickets.updateStatus)
-router.patch('/:id/assign', authorize('admin', 'super_admin'), tickets.assignTicket)
-router.post('/:id/comments', tickets.addComment)
-router.post('/:id/attachments', upload.single('file'), tickets.uploadAttachment)
+router.patch('/:id/status', authorize('fm', 'super_admin'), tickets.updateStatus)
+router.post('/:id/comments', authorize('fm', 'super_admin'), tickets.addComment)
+router.post('/:id/attachments', authorize('fm', 'super_admin'), upload.single('file'), tickets.uploadAttachment)
 
 export default router

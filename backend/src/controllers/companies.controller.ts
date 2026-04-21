@@ -4,8 +4,7 @@ import { AuthRequest } from '../types'
 
 export async function listCompanies(req: AuthRequest, res: Response): Promise<void> {
   try {
-    const adminId = req.user!.role === 'admin' ? req.user!.userId : undefined
-    const companies = await companiesService.listCompanies(adminId)
+    const companies = await companiesService.listCompanies(req.query.buildingId as string | undefined)
     res.json({ companies })
   } catch (err: any) {
     res.status(500).json({ error: err.message })
@@ -13,8 +12,10 @@ export async function listCompanies(req: AuthRequest, res: Response): Promise<vo
 }
 
 export async function createCompany(req: AuthRequest, res: Response): Promise<void> {
+  const { name, buildingId } = req.body
+  if (!name?.trim()) { res.status(400).json({ error: 'name required' }); return }
   try {
-    const company = await companiesService.createCompany(req.body)
+    const company = await companiesService.createCompany(name.trim(), buildingId)
     res.status(201).json({ company })
   } catch (err: any) {
     res.status(500).json({ error: err.message })
@@ -22,8 +23,10 @@ export async function createCompany(req: AuthRequest, res: Response): Promise<vo
 }
 
 export async function updateCompany(req: AuthRequest, res: Response): Promise<void> {
+  const { name, buildingId } = req.body
+  if (!name?.trim()) { res.status(400).json({ error: 'name required' }); return }
   try {
-    const company = await companiesService.updateCompany(req.params.id as string, req.body)
+    const company = await companiesService.updateCompany(req.params.id as string, name.trim(), buildingId)
     res.json({ company })
   } catch (err: any) {
     res.status(500).json({ error: err.message })

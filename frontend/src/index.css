@@ -24,14 +24,14 @@
   --color-txt1: #e8eaf0;
   --color-txt2: #8b92a5;
   --color-txt3: #565e72;
-  --color-accent: #4f8ef7;
+  --color-accent: #552e9e; /* exact logo purple */
   --color-success: #2ecc8a;
   --color-warning: #f5a623;
   --color-danger: #f05252;
 
   --bg-danger-15: rgba(240, 82, 82, 0.15);
   --bg-danger-10: rgba(240, 82, 82, 0.1);
-  --bg-accent-15: rgba(79, 142, 247, 0.15);
+  --bg-accent-15: rgba(85, 46, 158, 0.15);
   --bg-warning-30: rgba(245, 166, 35, 0.3);
   --bg-warning-15: rgba(245, 166, 35, 0.15);
   --bg-warning-05: rgba(245, 166, 35, 0.05);
@@ -41,7 +41,7 @@
 }
 
 :root.light {
-  --color-bg0: #f3f4f6; /* bg-gray-100 */
+  --color-bg0: #f4f5f9; /* very soft purple-grey */
   --color-bg1: #ffffff; /* white */
   --color-bg2: #f9fafb; /* bg-gray-50 */
   --color-bg3: #e5e7eb; /* bg-gray-200 */
@@ -49,7 +49,7 @@
   --color-txt1: #111827; /* text-gray-900 */
   --color-txt2: #4b5563; /* text-gray-600 */
   --color-txt3: #9ca3af; /* text-gray-400 */
-  --color-accent: #3b82f6; /* blue-500 */
+  --color-accent: #552e9e; /* exact logo purple */
   --color-success: #10b981; /* emerald-500 */
   --color-warning: #f59e0b; /* amber-500 */
   --color-danger: #ef4444; /* red-500 */
@@ -57,7 +57,7 @@
   /* Adjusted alphas for light mode to maintain contrast */
   --bg-danger-15: rgba(239, 68, 68, 0.15);
   --bg-danger-10: rgba(239, 68, 68, 0.1);
-  --bg-accent-15: rgba(59, 130, 246, 0.15);
+  --bg-accent-15: rgba(85, 46, 158, 0.15);
   --bg-warning-30: rgba(245, 158, 11, 0.3);
   --bg-warning-15: rgba(245, 158, 11, 0.15);
   --bg-warning-05: rgba(245, 158, 11, 0.05);
@@ -93,3 +93,5 @@ input, select, textarea, button, div, span, p, h1, h2, h3, h4, h5, h6 {
 ::-webkit-scrollbar-track { background: var(--color-bg1); }
 ::-webkit-scrollbar-thumb { background: var(--color-bg4); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-accent); }
+
+

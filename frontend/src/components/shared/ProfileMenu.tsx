@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, User, Sun, Moon } from 'lucide-react'
+import { LogOut, Sun, Moon } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import { useThemeStore } from '../../store/themeStore'
 import api from '../../lib/axios'

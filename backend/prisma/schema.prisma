@@ -7,97 +7,94 @@ datasource db {
 }
 
 enum Role {
-  client
-  admin
+  fm
   super_admin
-}
-
-enum TicketCategory {
-  electrical
-  plumbing
-  internet
-  housekeeping
-  furniture
-  hvac
-  security
-  access
-  billing
-  other
-}
-
-enum TicketPriority {
-  low
-  medium
-  high
-  critical
 }
 
 enum TicketStatus {
   open
-  acknowledged
   in_progress
-  on_hold
-  resolved
   closed
 }
 
 enum ActivityType {
   created
   status_changed
-  assigned
   comment_added
   note_added
   attachment_added
-  resolved
   closed
-  rating_submitted
 }
 
-enum NotificationType {
-  ticket_created
-  status_updated
-  comment_added
-  resolved
-  rating_requested
-  sla_warning
+model Category {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String   @db.VarChar(100)
+  slug       String   @unique @db.VarChar(100)
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz
+  updated_at DateTime @updatedAt @db.Timestamptz
+
+  tickets Ticket[]
+
+  @@map("categories")
+}
+
+model Building {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String   @db.VarChar(255)
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz
+  updated_at DateTime @updatedAt @db.Timestamptz
+
+  floors    Floor[]
+  companies Company[]
+  tickets   Ticket[]
+
+  @@map("buildings")
+}
+
+model Floor {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @db.VarChar(255)
+  building_id String   @db.Uuid
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now()) @db.Timestamptz
+  updated_at  DateTime @updatedAt @db.Timestamptz
+
+  building Building @relation(fields: [building_id], references: [id], onDelete: Cascade)
+  tickets  Ticket[]
+
+  @@map("floors")
 }
 
 model Company {
-  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name             String   @db.VarChar(255)
-  office_location  String?  @db.VarChar(255)
-  assigned_admin_id String? @db.Uuid
-  is_active        Boolean  @default(true)
-  created_at       DateTime @default(now()) @db.Timestamptz
-  updated_at       DateTime @updatedAt @db.Timestamptz
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @db.VarChar(255)
+  building_id String?  @db.Uuid
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now()) @db.Timestamptz
+  updated_at  DateTime @updatedAt @db.Timestamptz
 
-  assigned_admin User?             @relation("AdminCompanies", fields: [assigned_admin_id], references: [id])
-  users          User[]            @relation("CompanyUsers")
-  tickets        Ticket[]
+  building Building? @relation(fields: [building_id], references: [id], onDelete: SetNull)
+  tickets  Ticket[]
 
   @@map("companies")
 }
 
 model User {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name          String   @db.VarChar(255)
-  email         String   @unique @db.VarChar(255)
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String    @db.VarChar(255)
+  email         String    @unique @db.VarChar(255)
   password_hash String
-  role          Role     @default(client)
-  company_id    String?  @db.Uuid
-  is_active     Boolean  @default(true)
+  role          Role      @default(fm)
+  is_active     Boolean   @default(true)
   last_login    DateTime? @db.Timestamptz
-  created_at    DateTime @default(now()) @db.Timestamptz
-  updated_at    DateTime @updatedAt @db.Timestamptz
+  created_at    DateTime  @default(now()) @db.Timestamptz
+  updated_at    DateTime  @updatedAt @db.Timestamptz
 
-  company            Company?           @relation("CompanyUsers", fields: [company_id], references: [id])
-  admin_companies    Company[]          @relation("AdminCompanies")
-  raised_tickets     Ticket[]           @relation("RaisedBy")
-  assigned_tickets   Ticket[]           @relation("AssignedTo")
-  activities         TicketActivity[]
-  attachments        Attachment[]
-  ratings            Rating[]
-  notifications      Notification[]
+  tickets     Ticket[]
+  activities  TicketActivity[]
+  attachments Attachment[]
 
   @@map("users")
 }
@@ -105,27 +102,25 @@ model User {
 model Ticket {
   id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   ticket_number String         @unique @db.VarChar(20)
-  title         String         @db.VarChar(255)
+  building_id   String         @db.Uuid
+  floor_id      String         @db.Uuid
+  company_id    String         @db.Uuid
+  category_id   String         @db.Uuid
+  sub_category  String?        @db.VarChar(255)
   description   String
-  category      TicketCategory
-  priority      TicketPriority @default(medium)
   status        TicketStatus   @default(open)
   raised_by     String         @db.Uuid
-  company_id    String         @db.Uuid
-  assigned_to   String?        @db.Uuid
-  sla_due_at    DateTime?      @db.Timestamptz
-  resolved_at   DateTime?      @db.Timestamptz
   closed_at     DateTime?      @db.Timestamptz
   created_at    DateTime       @default(now()) @db.Timestamptz
   updated_at    DateTime       @updatedAt @db.Timestamptz
 
-  raiser       User             @relation("RaisedBy", fields: [raised_by], references: [id])
-  company      Company          @relation(fields: [company_id], references: [id])
-  assignee     User?            @relation("AssignedTo", fields: [assigned_to], references: [id])
-  activities   TicketActivity[]
-  attachments  Attachment[]
-  rating       Rating?
-  notifications Notification[]
+  building    Building         @relation(fields: [building_id], references: [id])
+  floor       Floor            @relation(fields: [floor_id], references: [id])
+  company     Company          @relation(fields: [company_id], references: [id])
+  category    Category         @relation(fields: [category_id], references: [id])
+  raiser      User             @relation(fields: [raised_by], references: [id])
+  activities  TicketActivity[]
+  attachments Attachment[]
 
   @@map("tickets")
 }
@@ -134,7 +129,6 @@ model TicketActivity {
   id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   ticket_id     String       @db.Uuid
   actor_id      String       @db.Uuid
-  actor_role    Role
   activity_type ActivityType
   old_value     String?
   new_value     String?
@@ -162,33 +156,4 @@ model Attachment {
   uploader User   @relation(fields: [uploaded_by], references: [id])
 
   @@map("attachments")
-}
-
-model Rating {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  ticket_id    String   @unique @db.Uuid
-  submitted_by String   @db.Uuid
-  rating       Int      @db.SmallInt
-  feedback     String?
-  submitted_at DateTime @default(now()) @db.Timestamptz
-
-  ticket    Ticket @relation(fields: [ticket_id], references: [id], onDelete: Cascade)
-  submitter User   @relation(fields: [submitted_by], references: [id])
-
-  @@map("ratings")
-}
-
-model Notification {
-  id         String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id    String           @db.Uuid
-  ticket_id  String?          @db.Uuid
-  type       NotificationType
-  message    String
-  is_read    Boolean          @default(false)
-  created_at DateTime         @default(now()) @db.Timestamptz
-
-  user   User    @relation(fields: [user_id], references: [id])
-  ticket Ticket? @relation(fields: [ticket_id], references: [id], onDelete: SetNull)
-
-  @@map("notifications")
 }
