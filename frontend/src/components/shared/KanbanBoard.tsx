@@ -1,5 +1,27 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Ticket, Clock, CheckCircle } from 'lucide-react'
+
+type Period = 'all' | 'week' | 'month'
+
+function getStartOf(period: Period): Date | null {
+  if (period === 'all') return null
+  const now = new Date()
+  if (period === 'week') {
+    const d = new Date(now)
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7)) // Monday
+    d.setHours(0, 0, 0, 0)
+    return d
+  }
+  // month
+  return new Date(now.getFullYear(), now.getMonth(), 1)
+}
+
+function filterByPeriod(tickets: any[], period: Period): any[] {
+  const start = getStartOf(period)
+  if (!start) return tickets
+  return tickets.filter(t => new Date(t.created_at) >= start)
+}
 
 function fmtDate(date: string): string {
   return new Date(date).toLocaleString('en-IN', {
@@ -95,11 +117,50 @@ interface Props {
   linkPrefix: string
 }
 
+const PERIODS: { value: Period; label: string }[] = [
+  { value: 'week',  label: 'This Week' },
+  { value: 'month', label: 'This Month' },
+  { value: 'all',   label: 'All Time' },
+]
+
 export default function KanbanBoard({ open, inProgress, closed, isLoading, linkPrefix }: Props) {
-  const buckets: Record<string, any[]> = { open, in_progress: inProgress, closed }
+  const [period, setPeriod] = useState<Period>('week')
+
+  const buckets: Record<string, any[]> = {
+    open:        filterByPeriod(open, period),
+    in_progress: filterByPeriod(inProgress, period),
+    closed:      filterByPeriod(closed, period),
+  }
+
+  const totalVisible = buckets.open.length + buckets.in_progress.length + buckets.closed.length
 
   return (
-    <div className="flex-1 p-5 grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+    <div className="flex-1 flex flex-col">
+      {/* Filter bar */}
+      <div className="flex items-center justify-between px-5 pt-4 pb-2">
+        <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: 'var(--color-bg1)', border: '1px solid var(--color-bg4)' }}>
+          {PERIODS.map(p => (
+            <button
+              key={p.value}
+              onClick={() => setPeriod(p.value)}
+              className="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all"
+              style={{
+                background: period === p.value ? 'var(--color-accent)' : 'transparent',
+                color: period === p.value ? '#fff' : 'var(--color-txt3)',
+              }}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+        {!isLoading && (
+          <p className="text-xs" style={{ color: 'var(--color-txt3)' }}>
+            {totalVisible} ticket{totalVisible !== 1 ? 's' : ''}
+          </p>
+        )}
+      </div>
+
+    <div className="flex-1 p-5 pt-3 grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
       {COLUMNS.map(col => {
         const tickets = buckets[col.key]
         const Icon = col.icon
@@ -158,6 +219,7 @@ export default function KanbanBoard({ open, inProgress, closed, isLoading, linkP
           </div>
         )
       })}
+    </div>
     </div>
   )
 }
