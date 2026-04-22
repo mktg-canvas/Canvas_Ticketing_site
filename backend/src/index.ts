@@ -10,6 +10,7 @@ import floorRoutes from './routes/floors.routes'
 import companyRoutes from './routes/companies.routes'
 import ticketRoutes from './routes/tickets.routes'
 import categoryRoutes from './routes/categories.routes'
+import analyticsRoutes from './routes/analytics.routes'
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -20,6 +21,7 @@ app.use(cors({
 }))
 app.use(express.json())
 app.use(cookieParser())
+app.use((req, _res, next) => { console.log(`${new Date().toISOString()} ${req.method} ${req.path}`); next() })
 app.use(generalLimiter)
 
 app.get('/api/health', (_, res) => res.json({ status: 'ok' }))
@@ -31,6 +33,7 @@ app.use('/api/floors', floorRoutes)
 app.use('/api/companies', companyRoutes)
 app.use('/api/tickets', ticketRoutes)
 app.use('/api/categories', categoryRoutes)
+app.use('/api/analytics', analyticsRoutes)
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`)

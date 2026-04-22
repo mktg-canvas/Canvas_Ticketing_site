@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Settings, Ticket } from 'lucide-react'
+import { Settings, Ticket, BarChart2 } from 'lucide-react'
 import { useTickets } from '../../hooks/useTickets'
 import { useAuthStore } from '../../store/authStore'
 import ProfileMenu from '../../components/shared/ProfileMenu'
@@ -31,6 +31,14 @@ export default function SuperAdminDashboard() {
         <div className="flex items-center gap-2">
           {/* Mobile: icon buttons only */}
           <button
+            onClick={() => navigate('/superadmin/analytics')}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition-colors"
+            style={{ borderColor: 'var(--color-bg4)', color: 'var(--color-txt2)', background: 'transparent' }}
+          >
+            <BarChart2 size={15} />
+            <span className="hidden sm:inline">Analytics</span>
+          </button>
+          <button
             onClick={() => navigate('/superadmin/accounts')}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-opacity hover:opacity-90"
             style={{ background: 'var(--color-accent)', color: '#fff' }}
@@ -44,7 +52,7 @@ export default function SuperAdminDashboard() {
             style={{ borderColor: 'var(--color-bg4)', color: 'var(--color-txt2)', background: 'transparent' }}
           >
             <Ticket size={15} />
-            <span className="hidden sm:inline">All Tickets</span>
+            <span className="hidden sm:inline">Tickets</span>
           </button>
           <ProfileMenu />
         </div>
