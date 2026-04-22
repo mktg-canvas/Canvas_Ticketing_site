@@ -20,7 +20,7 @@ const queryClient = new QueryClient({
 })
 
 function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { setAuth } = useAuthStore()
+  const setAuth = useAuthStore(s => s.setAuth)
 
   useEffect(() => {
     axios.post('/api/auth/refresh', {}, { withCredentials: true })
@@ -28,7 +28,7 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
         if (data.accessToken && data.user) setAuth(data.user, data.accessToken)
       })
       .catch(() => {})
-  }, [])
+  }, [setAuth])
 
   return <>{children}</>
 }

@@ -55,7 +55,7 @@ function MiniCard({ ticket, linkTo }: MiniCardProps) {
   return (
     <div
       onClick={() => navigate(linkTo)}
-      className="rounded-xl border cursor-pointer active:scale-[0.99]"
+      className="rounded-xl border cursor-pointer active:opacity-70"
       style={{ background: 'var(--color-bg0)', borderColor: 'var(--color-bg4)' }}
     >
       <div className="px-3 py-2.5">
@@ -157,7 +157,7 @@ export default function KanbanBoard({ open, inProgress, closed, isLoading, linkP
               <button
                 key={p.value}
                 onClick={() => setPeriod(p.value)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold"
                 style={{
                   background: period === p.value ? 'var(--color-accent)' : 'transparent',
                   color: period === p.value ? '#fff' : 'var(--color-txt3)',
@@ -201,7 +201,7 @@ export default function KanbanBoard({ open, inProgress, closed, isLoading, linkP
               <button
                 key={col.key}
                 onClick={() => setActiveTab(col.key)}
-                className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all"
+                className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold"
                 style={{
                   background: active ? 'var(--color-bg3)' : 'transparent',
                   color: active ? col.borderColor : 'var(--color-txt3)',

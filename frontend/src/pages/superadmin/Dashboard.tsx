@@ -17,48 +17,63 @@ export default function SuperAdminDashboard() {
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--color-bg0)' }}>
-      {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 border-b shrink-0"
-        style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}>
-        <div className="flex items-center gap-3">
-          <img src="/logo.png" alt="Canvas" className="h-8 w-auto object-contain" />
-          <div className="hidden sm:block w-px h-7" style={{ background: 'var(--color-bg4)' }} />
-          <div className="hidden sm:block">
-            <p className="text-sm font-bold leading-tight" style={{ color: 'var(--color-txt1)' }}>Super Admin</p>
-            <p className="text-xs" style={{ color: 'var(--color-txt3)' }}>{user?.name}</p>
+
+      {/* Floating pill nav — always visible while scrolling */}
+      <header
+        className="fixed top-3 left-3 right-3 z-40 flex items-center justify-between gap-2 px-3 py-2 rounded-full border"
+        style={{
+          background: 'var(--color-bg1)',
+          borderColor: 'var(--color-bg4)',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04)',
+          backdropFilter: 'saturate(180%) blur(8px)',
+          WebkitBackdropFilter: 'saturate(180%) blur(8px)',
+        }}
+      >
+        {/* Left: logo + title */}
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 pl-1">
+          <img src="/logo.png" alt="Canvas" className="h-7 sm:h-8 w-auto object-contain shrink-0" />
+          <div className="hidden sm:block w-px h-6" style={{ background: 'var(--color-bg4)' }} />
+          <div className="hidden sm:block min-w-0">
+            <p className="text-sm font-bold leading-tight truncate" style={{ color: 'var(--color-txt1)' }}>Super Admin</p>
+            <p className="text-[11px] truncate" style={{ color: 'var(--color-txt3)' }}>{user?.name}</p>
           </div>
         </div>
-        <div className="flex items-center gap-1.5 sm:gap-2">
+
+        {/* Right: actions + profile */}
+        <div className="flex items-center gap-1 sm:gap-1.5">
           <button
             aria-label="Analytics"
             onClick={() => navigate('/superadmin/analytics')}
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl text-xs font-semibold border transition-colors"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-full text-xs font-semibold border"
             style={{ borderColor: 'var(--color-bg4)', color: 'var(--color-txt2)', background: 'transparent' }}
           >
             <BarChart2 size={15} />
-            <span className="hidden sm:inline">Analytics</span>
+            <span className="hidden md:inline">Analytics</span>
           </button>
           <button
             aria-label="Manage"
             onClick={() => navigate('/superadmin/accounts')}
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl text-xs font-semibold transition-opacity hover:opacity-90"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-full text-xs font-semibold"
             style={{ background: 'var(--color-accent)', color: '#fff' }}
           >
             <Settings size={15} />
-            <span className="hidden sm:inline">Manage</span>
+            <span className="hidden md:inline">Manage</span>
           </button>
           <button
             aria-label="Tickets"
             onClick={() => navigate('/superadmin/tickets')}
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl text-xs font-semibold border transition-colors"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-full text-xs font-semibold border"
             style={{ borderColor: 'var(--color-bg4)', color: 'var(--color-txt2)', background: 'transparent' }}
           >
             <Ticket size={15} />
-            <span className="hidden sm:inline">Tickets</span>
+            <span className="hidden md:inline">Tickets</span>
           </button>
           <ProfileMenu />
         </div>
       </header>
+
+      {/* Spacer so content doesn't sit under nav */}
+      <div className="h-16 sm:h-20" aria-hidden />
 
       {/* Kanban */}
       <KanbanBoard

@@ -257,7 +257,7 @@ export default function FmTicketDetail() {
                     key={s}
                     onClick={() => handleStatus(s)}
                     disabled={updatingStatus}
-                    className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl font-semibold text-sm transition-all disabled:opacity-50"
+                    className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl font-semibold text-sm disabled:opacity-50"
                     style={{
                       background: isCurrent ? meta.bg : 'var(--color-bg3)',
                       color: isCurrent ? meta.color : 'var(--color-txt1)',
