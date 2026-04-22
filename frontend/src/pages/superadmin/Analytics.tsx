@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, BarChart2, TrendingUp, Clock, CheckCircle, Ticket,
@@ -82,17 +82,17 @@ interface StatCardProps {
 }
 function StatCard({ label, value, sub, color, icon: Icon }: StatCardProps) {
   return (
-    <div className="rounded-2xl p-4 border flex items-start gap-3 min-h-[88px]"
+    <div className="rounded-2xl p-3 sm:p-4 border flex items-start gap-2.5 sm:gap-3 min-h-[80px] sm:min-h-[88px]"
       style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}>
-      <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+      <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0"
         style={{ background: 'var(--color-bg3)' }}>
-        <Icon size={16} style={{ color: color || 'var(--color-txt2)' }} />
+        <Icon size={15} style={{ color: color || 'var(--color-txt2)' }} />
       </div>
       <div className="min-w-0">
-        <p className="text-xs mb-0.5" style={{ color: 'var(--color-txt3)' }}>{label}</p>
-        <p className="text-2xl font-bold leading-tight"
+        <p className="text-[11px] sm:text-xs mb-0.5 truncate" style={{ color: 'var(--color-txt3)' }}>{label}</p>
+        <p className="text-xl sm:text-2xl font-bold leading-tight"
           style={{ color: color || 'var(--color-txt1)' }}>{value}</p>
-        {sub && <p className="text-xs mt-0.5" style={{ color: 'var(--color-txt3)' }}>{sub}</p>}
+        {sub && <p className="text-[11px] sm:text-xs mt-0.5 truncate" style={{ color: 'var(--color-txt3)' }}>{sub}</p>}
       </div>
     </div>
   )
@@ -176,6 +176,14 @@ export default function Analytics() {
 
   const accessToken = useAuthStore(s => s.accessToken)
   const { data, isLoading, isError, error, refetch } = useAnalytics(filters)
+
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 640)
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 639px)')
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
   const { data: buildings = [] } = useBuildings()
   const { data: companies = [] } = useCompanies()
   const { data: categories = [] } = useCategories()
@@ -235,7 +243,7 @@ export default function Analytics() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto p-4 flex flex-col gap-4">
+      <div className="max-w-6xl mx-auto p-3 sm:p-4 flex flex-col gap-3 sm:gap-4">
 
         {/* Date range bar */}
         <div className="rounded-2xl border p-3 flex flex-wrap items-center gap-2"
@@ -414,10 +422,10 @@ export default function Analytics() {
           {/* Chart */}
           <div className="px-2 pt-4 pb-2">
             {isLoading ? (
-              <div className="h-72 mx-3 rounded-xl animate-pulse"
+              <div className="h-60 sm:h-72 mx-3 rounded-xl animate-pulse"
                 style={{ background: 'var(--color-bg3)' }} />
             ) : chartData.length === 0 ? (
-              <div className="h-72 flex flex-col items-center justify-center gap-2">
+              <div className="h-60 sm:h-72 flex flex-col items-center justify-center gap-2">
                 <BarChart2 size={28} style={{ color: 'var(--color-txt3)' }} />
                 <p className="text-sm font-medium" style={{ color: 'var(--color-txt2)' }}>
                   No tickets in this period
@@ -427,7 +435,7 @@ export default function Analytics() {
                 </p>
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height={320}>
+              <ResponsiveContainer width="100%" height={isMobile ? 240 : 320}>
                 <BarChart data={chartData} margin={{ top: 4, right: 16, left: -8, bottom: 0 }}
                   barCategoryGap="22%">
                   <CartesianGrid strokeDasharray="3 3" stroke={COLORS.gridLn} vertical={false} />

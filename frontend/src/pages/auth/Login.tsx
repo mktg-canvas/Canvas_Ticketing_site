@@ -68,7 +68,7 @@ export default function Login() {
         </div>
 
         <div className="w-full max-w-sm">
-          <h1 className="text-2xl font-bold mb-1" style={{ color: 'var(--color-txt1)' }}>Welcome back</h1>
+          <h1 className="text-2xl font-bold mb-1" style={{ color: 'var(--color-txt1)' }}>Welcome</h1>
           <p className="text-sm mb-8" style={{ color: 'var(--color-txt3)' }}>Sign in to your workspace</p>
 
           <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
