@@ -21,7 +21,6 @@ app.use(cors({
 }))
 app.use(express.json())
 app.use(cookieParser())
-app.use((req, _res, next) => { console.log(`${new Date().toISOString()} ${req.method} ${req.path}`); next() })
 app.use(generalLimiter)
 
 app.get('/api/health', (_, res) => res.json({ status: 'ok' }))

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, ChevronDown } from 'lucide-react'
-import { useTickets, useDeleteTicket } from '../../hooks/useTickets'
+import { useTickets } from '../../hooks/useTickets'
 import { useBuildings } from '../../hooks/useBuildings'
 import { useCompanies } from '../../hooks/useCompanies'
 import TicketCard from '../../components/tickets/TicketCard'
@@ -54,20 +54,6 @@ export default function SuperAdminAllTickets() {
   const { data: buildings = [] } = useBuildings()
   const { data: companies = [] } = useCompanies()
   const tickets = data?.tickets || []
-
-  const { mutate: rawDelete } = useDeleteTicket()
-  const [failedId, setFailedId] = useState<string | null>(null)
-  const [failedMsg, setFailedMsg] = useState('')
-
-  function deleteTicket(id: string) {
-    setFailedId(null)
-    rawDelete(id, {
-      onError: (err: any) => {
-        setFailedId(id)
-        setFailedMsg(err.response?.data?.error || 'Delete failed')
-      },
-    })
-  }
 
   const hasFilters = buildingId || companyId
 
@@ -136,8 +122,6 @@ export default function SuperAdminAllTickets() {
                 key={t.id}
                 ticket={t}
                 linkTo={`/superadmin/tickets/${t.id}`}
-                onDelete={deleteTicket}
-                deleteError={failedId === t.id ? failedMsg : null}
               />
             ))}
           </div>

@@ -68,6 +68,11 @@
 
 * { box-sizing: border-box; }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   background-color: var(--color-bg0);
   color: var(--color-txt1);
@@ -75,13 +80,34 @@ body {
   font-size: 14px;
   line-height: 1.6;
   margin: 0;
+  overflow-x: hidden;
   transition: background-color 0.2s ease, color 0.2s ease;
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 #root { min-height: 100svh; }
 
-input, textarea, select { 
-  font-size: 16px; 
+input, textarea, select {
+  font-size: 16px;  /* prevent iOS zoom on focus */
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;  /* disable double-tap zoom */
+}
+
+/* smooth momentum scrolling on iOS */
+.overflow-x-auto, .overflow-y-auto, .overflow-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Base style for inputs to have nice transition when changing theme */

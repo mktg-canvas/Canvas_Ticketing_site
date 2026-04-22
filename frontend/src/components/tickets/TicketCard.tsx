@@ -29,11 +29,10 @@ function getCategoryName(category: Ticket['category']): string {
 interface Props {
   ticket: Ticket
   linkTo: string
-  onDelete?: (id: string) => void
   deleteError?: string | null
 }
 
-export default function TicketCard({ ticket, linkTo, onDelete, deleteError }: Props) {
+export default function TicketCard({ ticket, linkTo, deleteError }: Props) {
   const navigate = useNavigate()
   const borderColor = STATUS_BORDER[ticket.status] || STATUS_BORDER.open
   const dotColor = STATUS_DOT[ticket.status] || STATUS_DOT.open
