@@ -17,7 +17,11 @@ api.interceptors.request.use((config) => {
 })
 
 let refreshing = false
-let queue: Array<(token: string) => void> = []
+interface QueueEntry {
+  resolve: (token: string) => void
+  reject: (err: unknown) => void
+}
+let queue: QueueEntry[] = []
 
 api.interceptors.response.use(
   (res) => res,
@@ -26,10 +30,13 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true
       if (refreshing) {
-        return new Promise((resolve) => {
-          queue.push((token: string) => {
-            original.headers.Authorization = `Bearer ${token}`
-            resolve(api(original))
+        return new Promise((resolve, reject) => {
+          queue.push({
+            resolve: (token: string) => {
+              original.headers.Authorization = `Bearer ${token}`
+              resolve(api(original))
+            },
+            reject: (err) => reject(err),
           })
         })
       }
@@ -37,13 +44,16 @@ api.interceptors.response.use(
       try {
         const { data } = await axios.post('/api/auth/refresh', {}, { withCredentials: true })
         useAuthStore.getState().setAccessToken(data.accessToken)
-        queue.forEach((cb) => cb(data.accessToken))
+        queue.forEach((e) => e.resolve(data.accessToken))
         queue = []
         original.headers.Authorization = `Bearer ${data.accessToken}`
         return api(original)
-      } catch {
+      } catch (refreshErr) {
+        queue.forEach((e) => e.reject(refreshErr))
+        queue = []
         useAuthStore.getState().logout()
         window.location.href = '/login'
+        return Promise.reject(refreshErr)
       } finally {
         refreshing = false
       }

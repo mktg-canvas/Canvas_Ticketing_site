@@ -10,6 +10,7 @@ import FmTicketDetail from './pages/fm/TicketDetail'
 import SuperAdminDashboard from './pages/superadmin/Dashboard'
 import SuperAdminAllTickets from './pages/superadmin/AllTickets'
 import Accounts from './pages/superadmin/Accounts'
+import Analytics from './pages/superadmin/Analytics'
 import ProtectedRoute from './components/shared/ProtectedRoute'
 import { useAuthStore } from './store/authStore'
 
@@ -57,6 +58,7 @@ export default function App() {
                   <Route path="tickets" element={<SuperAdminAllTickets />} />
                   <Route path="tickets/:id" element={<FmTicketDetail />} />
                   <Route path="accounts" element={<Accounts />} />
+                  <Route path="analytics" element={<Analytics />} />
                 </Routes>
               </ProtectedRoute>
             } />
