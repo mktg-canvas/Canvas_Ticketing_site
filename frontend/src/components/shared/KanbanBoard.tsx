@@ -1,26 +1,38 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Ticket, Clock, CheckCircle } from 'lucide-react'
+import { Ticket, Clock, CheckCircle, Calendar } from 'lucide-react'
 
-type Period = 'all' | 'week' | 'month'
+type Period = '7d' | '30d' | 'all' | 'custom'
 
-function getStartOf(period: Period): Date | null {
-  if (period === 'all') return null
-  const now = new Date()
-  if (period === 'week') {
-    const d = new Date(now)
-    d.setDate(d.getDate() - ((d.getDay() + 6) % 7))
-    d.setHours(0, 0, 0, 0)
-    return d
+interface Range { start: Date | null; end: Date | null }
+
+function computeRange(period: Period, customFrom: string, customTo: string): Range {
+  if (period === 'all') return { start: null, end: null }
+  if (period === 'custom') {
+    return {
+      start: customFrom ? new Date(customFrom + 'T00:00:00') : null,
+      end:   customTo   ? new Date(customTo   + 'T23:59:59') : null,
+    }
   }
-  return new Date(now.getFullYear(), now.getMonth(), 1)
+  const now = new Date()
+  const days = period === '7d' ? 7 : 30
+  const start = new Date(now)
+  start.setDate(start.getDate() - days)
+  start.setHours(0, 0, 0, 0)
+  return { start, end: null }
 }
 
-function filterByPeriod(tickets: any[], period: Period): any[] {
-  const start = getStartOf(period)
-  if (!start) return tickets
-  return tickets.filter(t => new Date(t.created_at) >= start)
+function filterByRange(tickets: any[], range: Range): any[] {
+  if (!range.start && !range.end) return tickets
+  return tickets.filter(t => {
+    const d = new Date(t.created_at)
+    if (range.start && d < range.start) return false
+    if (range.end   && d > range.end)   return false
+    return true
+  })
 }
+
+function todayStr() { return new Date().toISOString().slice(0, 10) }
 
 function fmtDate(date: string): string {
   return new Date(date).toLocaleString('en-IN', {
@@ -104,9 +116,10 @@ const COLUMNS = [
 ]
 
 const PERIODS: { value: Period; label: string }[] = [
-  { value: 'week',  label: 'This Week' },
-  { value: 'month', label: 'This Month' },
-  { value: 'all',   label: 'All Time' },
+  { value: '7d',     label: '7 Days' },
+  { value: '30d',    label: '30 Days' },
+  { value: 'all',    label: 'All Time' },
+  { value: 'custom', label: 'Custom' },
 ]
 
 interface Props {
@@ -118,13 +131,17 @@ interface Props {
 }
 
 export default function KanbanBoard({ open, inProgress, closed, isLoading, linkPrefix }: Props) {
-  const [period, setPeriod] = useState<Period>('week')
+  const [period, setPeriod] = useState<Period>('7d')
+  const [customFrom, setCustomFrom] = useState(todayStr())
+  const [customTo, setCustomTo] = useState(todayStr())
   const [activeTab, setActiveTab] = useState<'open' | 'in_progress' | 'closed'>('open')
 
+  const range = useMemo(() => computeRange(period, customFrom, customTo), [period, customFrom, customTo])
+
   const buckets: Record<string, any[]> = {
-    open:        filterByPeriod(open, period),
-    in_progress: filterByPeriod(inProgress, period),
-    closed:      filterByPeriod(closed, period),
+    open:        filterByRange(open, range),
+    in_progress: filterByRange(inProgress, range),
+    closed:      filterByRange(closed, range),
   }
 
   const totalVisible = buckets.open.length + buckets.in_progress.length + buckets.closed.length
@@ -133,21 +150,37 @@ export default function KanbanBoard({ open, inProgress, closed, isLoading, linkP
     <div className="pb-8">
 
       {/* Top bar: period filter + count */}
-      <div className="flex items-center justify-between px-4 pt-3 pb-2 gap-3">
-        <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: 'var(--color-bg1)', border: '1px solid var(--color-bg4)' }}>
-          {PERIODS.map(p => (
-            <button
-              key={p.value}
-              onClick={() => setPeriod(p.value)}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-              style={{
-                background: period === p.value ? 'var(--color-accent)' : 'transparent',
-                color: period === p.value ? '#fff' : 'var(--color-txt3)',
-              }}
-            >
-              {p.label}
-            </button>
-          ))}
+      <div className="flex items-center justify-between px-4 pt-3 pb-2 gap-3 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: 'var(--color-bg1)', border: '1px solid var(--color-bg4)' }}>
+            {PERIODS.map(p => (
+              <button
+                key={p.value}
+                onClick={() => setPeriod(p.value)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                style={{
+                  background: period === p.value ? 'var(--color-accent)' : 'transparent',
+                  color: period === p.value ? '#fff' : 'var(--color-txt3)',
+                }}
+              >
+                {p.value === 'custom' && <Calendar size={12} />}
+                {p.label}
+              </button>
+            ))}
+          </div>
+          {period === 'custom' && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <input type="date" value={customFrom} max={customTo || todayStr()}
+                onChange={e => setCustomFrom(e.target.value)}
+                className="rounded-lg px-3 text-xs outline-none border h-8"
+                style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)', color: 'var(--color-txt1)' }} />
+              <span className="text-xs" style={{ color: 'var(--color-txt3)' }}>to</span>
+              <input type="date" value={customTo} min={customFrom} max={todayStr()}
+                onChange={e => setCustomTo(e.target.value)}
+                className="rounded-lg px-3 text-xs outline-none border h-8"
+                style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)', color: 'var(--color-txt1)' }} />
+            </div>
+          )}
         </div>
         {!isLoading && (
           <p className="text-xs shrink-0" style={{ color: 'var(--color-txt3)' }}>
