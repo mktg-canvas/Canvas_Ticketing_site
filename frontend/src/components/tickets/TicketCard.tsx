@@ -41,7 +41,7 @@ export default function TicketCard({ ticket, linkTo, deleteError }: Props) {
   return (
     <div
       onClick={() => navigate(linkTo)}
-      className="rounded-2xl border cursor-pointer transition-all hover:shadow-md active:scale-[0.99]"
+      className="rounded-2xl border cursor-pointer active:opacity-70"
       style={{
         background: 'var(--color-bg1)',
         borderColor: 'var(--color-bg4)',

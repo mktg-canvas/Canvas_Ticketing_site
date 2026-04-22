@@ -255,7 +255,7 @@ export default function Analytics() {
             <button
               key={p.value}
               onClick={() => setPreset(p.value)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold"
               style={{
                 background: preset === p.value ? 'var(--color-accent)' : 'var(--color-bg3)',
                 color: preset === p.value ? '#fff' : 'var(--color-txt2)',

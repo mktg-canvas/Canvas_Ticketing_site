@@ -81,9 +81,12 @@ body {
   line-height: 1.6;
   margin: 0;
   overflow-x: hidden;
-  transition: background-color 0.2s ease, color 0.2s ease;
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
+  /* GPU hints for smooth scroll */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 #root { min-height: 100svh; }
@@ -97,9 +100,24 @@ button {
   touch-action: manipulation;  /* disable double-tap zoom */
 }
 
-/* smooth momentum scrolling on iOS */
+/* Theme-switch transition only on root (not every element). Keeps theme swap smooth
+   without making every re-render animate. */
+:root {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Scoped transitions: only on interactive elements, only the properties that change. */
+button, a, [role="button"] {
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+}
+input, textarea, select {
+  transition: border-color 0.15s ease;
+}
+
+/* smooth momentum scrolling on iOS + GPU layer for scroll containers */
 .overflow-x-auto, .overflow-y-auto, .overflow-auto {
   -webkit-overflow-scrolling: touch;
+  transform: translateZ(0);  /* force compositor layer */
 }
 
 /* respect reduced motion preference */
@@ -110,14 +128,22 @@ button {
   }
 }
 
-/* Base style for inputs to have nice transition when changing theme */
-input, select, textarea, button, div, span, p, h1, h2, h3, h4, h5, h6 {
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+/* Scrollbar (desktop only — mobile hides natively) */
+@media (hover: hover) and (pointer: fine) {
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--color-bg1); }
+  ::-webkit-scrollbar-thumb { background: var(--color-bg4); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--color-accent); }
 }
 
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--color-bg1); }
-::-webkit-scrollbar-thumb { background: var(--color-bg4); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--color-accent); }
+/* Hover effects only on devices that actually have hover (not touch) */
+@media (hover: none) {
+  .hover\:shadow-md:hover,
+  .hover\:shadow-lg:hover,
+  .hover\:opacity-90:hover {
+    box-shadow: none;
+    opacity: 1;
+  }
+}
 
 
