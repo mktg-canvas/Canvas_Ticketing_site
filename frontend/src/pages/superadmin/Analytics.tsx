@@ -1,9 +1,10 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, BarChart2, TrendingUp, Clock, CheckCircle, Ticket,
-  AlertCircle, ChevronDown, Calendar, SlidersHorizontal, X,
+  AlertCircle, ChevronDown, Calendar, SlidersHorizontal, X, Download, Loader2,
 } from 'lucide-react'
+import html2canvas from 'html2canvas'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer,
@@ -151,6 +152,8 @@ const ChartTooltip = ({ active, payload, label }: any) => {
 
 export default function Analytics() {
   const navigate = useNavigate()
+  const chartRef = useRef<HTMLDivElement>(null)
+  const [isExporting, setIsExporting] = useState(false)
   const [preset, setPreset] = useState<DatePreset>('30d')
   const [customFrom, setCustomFrom] = useState(todayStr())
   const [customTo, setCustomTo] = useState(todayStr())
@@ -223,6 +226,57 @@ export default function Analytics() {
 
   function clearFilters() {
     setBuildingId(''); setCompanyId(''); setCategoryId(''); setFmId('')
+  }
+
+  async function downloadPDF() {
+    if (!data) return
+    setIsExporting(true)
+    try {
+      // Capture just the chart as an image
+      let chartImageUrl: string | undefined
+      if (chartRef.current && chartData.length > 0) {
+        const bg = getComputedStyle(document.documentElement).getPropertyValue('--color-bg1').trim() || '#ffffff'
+        const canvas = await html2canvas(chartRef.current, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: bg,
+          logging: false,
+        })
+        chartImageUrl = canvas.toDataURL('image/png')
+      }
+
+      // Build active filter labels
+      const activeFilters: string[] = []
+      if (buildingId) activeFilters.push(`Building: ${buildings.find((b: any) => b.id === buildingId)?.name ?? buildingId}`)
+      if (companyId)  activeFilters.push(`Company: ${companies.find((c: any) => c.id === companyId)?.name ?? companyId}`)
+      if (categoryId) activeFilters.push(`Category: ${categories.find((c: any) => c.id === categoryId)?.name ?? categoryId}`)
+      if (fmId)       activeFilters.push(`FM: ${fms.find((u: any) => u.id === fmId)?.name ?? fmId}`)
+
+      const [{ pdf }, { AnalyticsReportPDF }] = await Promise.all([
+        import('@react-pdf/renderer'),
+        import('../../components/shared/AnalyticsReportPDF'),
+      ])
+      const blob = await pdf(
+        <AnalyticsReportPDF
+          summary={data.summary}
+          tableRows={tableRows}
+          dimLabel={dimLabel}
+          dateLabel={activeDateLabel ?? ''}
+          chartImageUrl={chartImageUrl}
+          generatedAt={new Date().toLocaleString('en-IN')}
+          activeFilters={activeFilters}
+        />
+      ).toBlob()
+
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `canvas-analytics-${dimension}-${new Date().toISOString().slice(0, 10)}.pdf`
+      a.click()
+      URL.revokeObjectURL(url)
+    } finally {
+      setIsExporting(false)
+    }
   }
 
   return (
@@ -417,10 +471,25 @@ export default function Analytics() {
                 {!isLoading && ` · ${totalTickets} tickets across ${tableRows.length} ${tableRows.length === 1 ? 'item' : 'items'}`}
               </p>
             </div>
+            {!isLoading && tableRows.length > 0 && (
+              <button
+                data-html2canvas-ignore
+                onClick={downloadPDF}
+                disabled={isExporting}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold shrink-0 disabled:opacity-60"
+                style={{ background: 'var(--color-bg3)', color: 'var(--color-txt2)' }}
+                title="Download PDF report"
+              >
+                {isExporting
+                  ? <><Loader2 size={13} className="animate-spin" />Exporting…</>
+                  : <><Download size={13} />Export PDF</>
+                }
+              </button>
+            )}
           </div>
 
           {/* Chart */}
-          <div className="px-2 pt-4 pb-2">
+          <div ref={chartRef} className="px-2 pt-4 pb-2">
             {isLoading ? (
               <div className="h-60 sm:h-72 mx-3 rounded-xl animate-pulse"
                 style={{ background: 'var(--color-bg3)' }} />
