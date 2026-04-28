@@ -7,6 +7,7 @@ import { useFloors } from '../../hooks/useFloors'
 import { useCompanies } from '../../hooks/useCompanies'
 import { useCategories } from '../../hooks/useCategories'
 import { useCreateTicket } from '../../hooks/useTickets'
+import { useAuthStore } from '../../store/authStore'
 
 const FLOOR_ORDER = ['Ground Floor','1st Floor','2nd Floor','3rd Floor','4th Floor','Terrace','Basement','Common Area']
 
@@ -138,6 +139,7 @@ function StatusField({ value, onChange }: { value: StatusValue; onChange: (v: St
 
 export default function RaiseTicket() {
   const navigate = useNavigate()
+  const role = useAuthStore(s => s.user?.role)
   const { mutateAsync: createTicket, isPending } = useCreateTicket()
   const [error, setError] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
@@ -194,7 +196,7 @@ export default function RaiseTicket() {
       photos.forEach(f => fd.append('files', f))
 
       const ticket = await createTicket(fd)
-      navigate(`/fm/tickets/${ticket.id}`)
+      navigate(role === 'super_admin' ? `/superadmin/tickets/${ticket.id}` : `/fm/tickets/${ticket.id}`)
     } catch (err: unknown) {
       if (isAxiosError(err)) {
         const e = err.response?.data?.error

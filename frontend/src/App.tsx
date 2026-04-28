@@ -14,6 +14,7 @@ const SuperAdminDashboard   = lazy(() => import('./pages/superadmin/Dashboard'))
 const SuperAdminAllTickets  = lazy(() => import('./pages/superadmin/AllTickets'))
 const Accounts              = lazy(() => import('./pages/superadmin/Accounts'))
 const Analytics             = lazy(() => import('./pages/superadmin/Analytics'))
+const RaiseTicketAdmin      = lazy(() => import('./pages/fm/RaiseTicket'))
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
@@ -71,6 +72,7 @@ export default function App() {
                     <Route path="tickets/:id" element={<FmTicketDetail />} />
                     <Route path="accounts" element={<Accounts />} />
                     <Route path="analytics" element={<Analytics />} />
+                    <Route path="raise-ticket" element={<RaiseTicketAdmin />} />
                   </Routes>
                 </ProtectedRoute>
               } />
