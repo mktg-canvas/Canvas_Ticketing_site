@@ -23,9 +23,10 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
   const setAuth = useAuthStore(s => s.setAuth)
 
   useEffect(() => {
-    axios.post('/api/auth/refresh', {}, { withCredentials: true })
+    const storedRefreshToken = useAuthStore.getState().refreshToken
+    axios.post('/api/auth/refresh', storedRefreshToken ? { refreshToken: storedRefreshToken } : {}, { withCredentials: true })
       .then(({ data }) => {
-        if (data.accessToken && data.user) setAuth(data.user, data.accessToken)
+        if (data.accessToken && data.user) setAuth(data.user, data.accessToken, storedRefreshToken ?? '')
       })
       .catch(() => {})
   }, [setAuth])

@@ -24,8 +24,8 @@ export default function Login() {
     setError('')
     try {
       const res = await api.post('/auth/login', data)
-      const { accessToken, user } = res.data
-      setAuth(user, accessToken)
+      const { accessToken, refreshToken, user } = res.data
+      setAuth(user, accessToken, refreshToken)
       const routes: Record<Role, string> = { fm: '/fm/dashboard', super_admin: '/superadmin/dashboard' }
       navigate(routes[user.role as Role])
     } catch (err: unknown) {

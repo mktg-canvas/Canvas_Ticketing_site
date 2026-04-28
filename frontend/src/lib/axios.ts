@@ -42,7 +42,8 @@ api.interceptors.response.use(
       }
       refreshing = true
       try {
-        const { data } = await axios.post('/api/auth/refresh', {}, { withCredentials: true })
+        const storedRefreshToken = useAuthStore.getState().refreshToken
+        const { data } = await axios.post('/api/auth/refresh', storedRefreshToken ? { refreshToken: storedRefreshToken } : {}, { withCredentials: true })
         useAuthStore.getState().setAccessToken(data.accessToken)
         queue.forEach((e) => e.resolve(data.accessToken))
         queue = []
