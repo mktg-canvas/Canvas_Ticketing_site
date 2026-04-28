@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Settings, Ticket, BarChart2 } from 'lucide-react'
+import { Settings, Ticket, BarChart2, Plus } from 'lucide-react'
 import { useTickets } from '../../hooks/useTickets'
 import { useAuthStore } from '../../store/authStore'
 import ProfileMenu from '../../components/shared/ProfileMenu'
@@ -41,6 +41,15 @@ export default function SuperAdminDashboard() {
 
         {/* Right: actions + profile */}
         <div className="flex items-center gap-1 sm:gap-1.5">
+          <button
+            aria-label="Raise Ticket"
+            onClick={() => navigate('/superadmin/raise-ticket')}
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-full text-xs font-semibold border"
+            style={{ borderColor: 'var(--color-bg4)', color: 'var(--color-txt2)', background: 'transparent' }}
+          >
+            <Plus size={15} />
+            <span className="hidden md:inline">Raise Ticket</span>
+          </button>
           <button
             aria-label="Analytics"
             onClick={() => navigate('/superadmin/analytics')}

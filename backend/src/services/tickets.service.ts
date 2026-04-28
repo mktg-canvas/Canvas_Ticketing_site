@@ -150,10 +150,23 @@ export async function updateTicketStatus(actor: JwtPayload, ticketId: string, ne
   const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } })
   if (!ticket) throw { status: 404, message: 'Ticket not found' }
 
-  const updateData: { status: TicketStatus; opened_at?: Date; in_progress_at?: Date; closed_at?: Date } = { status: newStatus as TicketStatus }
-  if (newStatus === 'open' && !ticket.opened_at) updateData.opened_at = new Date()
-  if (newStatus === 'in_progress' && !ticket.in_progress_at) updateData.in_progress_at = new Date()
-  if (newStatus === 'closed' && !ticket.closed_at) updateData.closed_at = new Date()
+  const updateData: {
+    status: TicketStatus
+    opened_at?: Date | null
+    in_progress_at?: Date | null
+    closed_at?: Date | null
+  } = { status: newStatus as TicketStatus }
+
+  if (newStatus === 'open') {
+    if (!ticket.opened_at) updateData.opened_at = new Date()
+    updateData.in_progress_at = null
+    updateData.closed_at = null
+  } else if (newStatus === 'in_progress') {
+    if (!ticket.in_progress_at) updateData.in_progress_at = new Date()
+    updateData.closed_at = null
+  } else if (newStatus === 'closed') {
+    if (!ticket.closed_at) updateData.closed_at = new Date()
+  }
 
   const [updated] = await Promise.all([
     prisma.ticket.update({ where: { id: ticketId }, data: updateData }),
@@ -183,6 +196,32 @@ export async function addComment(actor: JwtPayload, ticketId: string, comment: s
       is_internal: isInternal,
     },
   })
+  return getTicketById(ticketId)
+}
+
+export async function editTicket(
+  ticketId: string,
+  data: {
+    buildingId?: string
+    floorId?: string
+    companyId?: string
+    categoryId?: string
+    subCategory?: string | null
+    description?: string
+  }
+) {
+  const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } })
+  if (!ticket) throw { status: 404, message: 'Ticket not found' }
+
+  const updateData: Record<string, unknown> = {}
+  if (data.buildingId) updateData.building_id = data.buildingId
+  if (data.floorId) updateData.floor_id = data.floorId
+  if (data.companyId) updateData.company_id = data.companyId
+  if (data.categoryId) updateData.category_id = data.categoryId
+  if (data.subCategory !== undefined) updateData.sub_category = data.subCategory || null
+  if (data.description !== undefined) updateData.description = data.description
+
+  await prisma.ticket.update({ where: { id: ticketId }, data: updateData })
   return getTicketById(ticketId)
 }
 

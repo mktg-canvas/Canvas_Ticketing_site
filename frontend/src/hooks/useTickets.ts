@@ -36,6 +36,28 @@ export function useCreateTicket() {
   })
 }
 
+export function useEditTicket() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...data }: {
+      id: string
+      buildingId?: string
+      floorId?: string
+      companyId?: string
+      categoryId?: string
+      subCategory?: string
+      description?: string
+    }) => {
+      const { data: res } = await api.patch(`/tickets/${id}`, data)
+      return res.ticket
+    },
+    onSuccess: (_d, { id }) => {
+      qc.invalidateQueries({ queryKey: ['ticket', id] })
+      qc.invalidateQueries({ queryKey: ['tickets'] })
+    },
+  })
+}
+
 export function useDeleteTicket() {
   const qc = useQueryClient()
   return useMutation({

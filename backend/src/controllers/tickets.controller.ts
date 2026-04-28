@@ -13,6 +13,15 @@ const createSchema = z.object({
   status: z.enum(['open', 'in_progress', 'closed']).optional(),
 })
 
+const editSchema = z.object({
+  buildingId:  z.string().uuid().optional(),
+  floorId:     z.string().uuid().optional(),
+  companyId:   z.string().uuid().optional(),
+  categoryId:  z.string().uuid().optional(),
+  subCategory: z.string().max(255).nullable().optional(),
+  description: z.string().optional(),
+})
+
 const statusSchema = z.object({
   status: z.enum(['open','in_progress','closed']),
   comment: z.string().optional(),
@@ -54,6 +63,20 @@ export async function listTickets(req: AuthRequest, res: Response): Promise<void
 export async function getTicket(req: AuthRequest, res: Response): Promise<void> {
   try {
     const ticket = await ticketsService.getTicketById(req.params.id as string)
+    res.json({ ticket })
+  } catch (err: any) {
+    res.status(err.status || 500).json({ error: err.message })
+  }
+}
+
+export async function editTicket(req: AuthRequest, res: Response): Promise<void> {
+  const parsed = editSchema.safeParse(req.body)
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten().fieldErrors })
+    return
+  }
+  try {
+    const ticket = await ticketsService.editTicket(req.params.id as string, parsed.data)
     res.json({ ticket })
   } catch (err: any) {
     res.status(err.status || 500).json({ error: err.message })

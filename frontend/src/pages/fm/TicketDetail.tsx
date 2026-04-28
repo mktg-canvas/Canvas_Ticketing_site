@@ -1,7 +1,12 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Building2, Layers, Briefcase, User, Clock, FileText, Image as ImageIcon, CheckCircle, MapPin } from 'lucide-react'
-import { useTicket, useUpdateStatus } from '../../hooks/useTickets'
+import { ArrowLeft, Building2, Layers, Briefcase, User, Clock, FileText, Image as ImageIcon, CheckCircle, MapPin, Pencil, Trash2, ChevronDown } from 'lucide-react'
+import { useTicket, useUpdateStatus, useEditTicket, useDeleteTicket } from '../../hooks/useTickets'
+import { useBuildings } from '../../hooks/useBuildings'
+import { useFloors } from '../../hooks/useFloors'
+import { useCompanies } from '../../hooks/useCompanies'
+import { useCategories } from '../../hooks/useCategories'
+import { useAuthStore } from '../../store/authStore'
 import { StatusBadge } from '../../components/tickets/StatusBadge'
 
 const NEXT_STATUSES = ['open', 'in_progress', 'closed'] as const
@@ -20,16 +25,101 @@ function fmt(d?: string | null) {
   })
 }
 
+function EditSelect({ label, value, onChange, children }: {
+  label: string; value: string; onChange: (v: string) => void; children: React.ReactNode
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-xs font-semibold" style={{ color: 'var(--color-txt3)' }}>{label}</label>
+      <div className="relative">
+        <select
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          className="w-full appearance-none rounded-xl px-3 pr-8 text-sm outline-none border"
+          style={{
+            background: 'var(--color-bg2)',
+            borderColor: 'var(--color-bg4)',
+            color: 'var(--color-txt1)',
+            height: 44,
+          }}
+          onFocus={e => (e.target.style.borderColor = 'var(--color-accent)')}
+          onBlur={e => (e.target.style.borderColor = 'var(--color-bg4)')}
+        >
+          {children}
+        </select>
+        <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--color-txt3)' }} />
+      </div>
+    </div>
+  )
+}
+
 export default function FmTicketDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const user = useAuthStore(s => s.user)
+  const isAdmin = user?.role === 'super_admin'
+
   const { data: ticket, isLoading } = useTicket(id!)
   const { mutateAsync: updateStatus, isPending: updatingStatus } = useUpdateStatus()
+  const { mutateAsync: editTicket, isPending: editing } = useEditTicket()
+  const { mutateAsync: deleteTicket, isPending: deleting } = useDeleteTicket()
+
+  const { data: buildings = [] } = useBuildings()
+  const [editBuildingId, setEditBuildingId] = useState('')
+  const { data: floors = [] } = useFloors(editBuildingId || undefined)
+  const { data: companies = [] } = useCompanies()
+  const { data: categories = [] } = useCategories()
+
   const [showStatusSheet, setShowStatusSheet] = useState(false)
+  const [showEditSheet, setShowEditSheet] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [editForm, setEditForm] = useState({
+    buildingId: '', floorId: '', companyId: '',
+    categoryId: '', subCategory: '', description: '',
+  })
+
+  function openEditSheet() {
+    if (!ticket) return
+    const catId = typeof ticket.category === 'string' ? '' : (ticket.category as any)?.id ?? ''
+    const bid = ticket.building_id
+    setEditBuildingId(bid)
+    setEditForm({
+      buildingId: bid,
+      floorId: ticket.floor_id,
+      companyId: ticket.company_id,
+      categoryId: catId,
+      subCategory: ticket.sub_category ?? '',
+      description: ticket.description ?? '',
+    })
+    setShowEditSheet(true)
+  }
+
+  function handleEditBuildingChange(buildingId: string) {
+    setEditBuildingId(buildingId)
+    setEditForm(f => ({ ...f, buildingId, floorId: '' }))
+  }
 
   async function handleStatus(newStatus: string) {
     await updateStatus({ id: id!, status: newStatus })
     setShowStatusSheet(false)
+  }
+
+  async function handleEdit() {
+    await editTicket({
+      id: id!,
+      buildingId: editForm.buildingId || undefined,
+      floorId: editForm.floorId || undefined,
+      companyId: editForm.companyId || undefined,
+      categoryId: editForm.categoryId || undefined,
+      subCategory: editForm.subCategory || undefined,
+      description: editForm.description,
+    })
+    setShowEditSheet(false)
+  }
+
+  async function handleDelete() {
+    await deleteTicket(id!)
+    navigate(-1)
   }
 
   if (isLoading) return (
@@ -50,13 +140,14 @@ export default function FmTicketDetail() {
     ? ticket.category.replace(/_/g, ' ')
     : (ticket.category as any)?.name ?? ''
 
+  const STATUS_ORDER: Record<string, number> = { open: 0, in_progress: 1, closed: 2 }
+  const currentStepIdx = STATUS_ORDER[ticket.status] ?? 0
+
   const timelineSteps = [
     { key: 'open',        ts: ticket.opened_at },
     { key: 'in_progress', ts: ticket.in_progress_at },
     { key: 'closed',      ts: ticket.closed_at },
   ] as const
-
-  const currentStepIdx = timelineSteps.map(s => !!s.ts).lastIndexOf(true)
 
   return (
     <div className="min-h-screen pb-10" style={{ background: 'var(--color-bg0)' }}>
@@ -70,13 +161,35 @@ export default function FmTicketDetail() {
           {ticket.ticket_number}
         </span>
         <StatusBadge status={ticket.status} />
-        <button
-          onClick={() => setShowStatusSheet(true)}
-          className="ml-auto shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-opacity hover:opacity-90"
-          style={{ background: 'var(--color-accent)', color: '#fff' }}
-        >
-          Update Status
-        </button>
+
+        <div className="ml-auto flex items-center gap-2">
+          {isAdmin && (
+            <>
+              <button
+                onClick={openEditSheet}
+                className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg transition-colors hover:bg-[var(--color-bg3)]"
+                title="Edit ticket"
+              >
+                <Pencil size={16} style={{ color: 'var(--color-txt2)' }} />
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg transition-colors"
+                style={{ color: 'var(--color-danger)' }}
+                title="Delete ticket"
+              >
+                <Trash2 size={16} />
+              </button>
+            </>
+          )}
+          <button
+            onClick={() => setShowStatusSheet(true)}
+            className="shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-opacity hover:opacity-90"
+            style={{ background: 'var(--color-accent)', color: '#fff' }}
+          >
+            Update Status
+          </button>
+        </div>
       </div>
 
       <div className="max-w-2xl mx-auto p-4 flex flex-col gap-4">
@@ -108,10 +221,10 @@ export default function FmTicketDetail() {
           <p className="text-xs font-bold uppercase tracking-wider mb-2.5 px-1" style={{ color: 'var(--color-txt3)' }}>Details</p>
           <div className="grid grid-cols-2 gap-2">
             {[
-              { icon: Building2, label: 'Building', value: ticket.building?.name },
-              { icon: Layers,    label: 'Floor',    value: ticket.floor?.name },
-              { icon: Briefcase, label: 'Company',  value: ticket.company?.name },
-              { icon: User,      label: 'Raised by', value: (ticket as any).raiser?.name },
+              { icon: Building2, label: 'Building',   value: ticket.building?.name },
+              { icon: Layers,    label: 'Floor',       value: ticket.floor?.name },
+              { icon: Briefcase, label: 'Company',     value: ticket.company?.name },
+              { icon: User,      label: 'Raised by',   value: (ticket as any).raiser?.name },
             ].filter(d => d.value).map(({ icon: Icon, label, value }) => (
               <div key={label} className="rounded-xl p-3.5 border" style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}>
                 <div className="flex items-center gap-2 mb-1">
@@ -122,7 +235,6 @@ export default function FmTicketDetail() {
               </div>
             ))}
           </div>
-          {/* Created — full width */}
           <div className="mt-2 rounded-xl p-3.5 border flex items-center gap-3" style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}>
             <Clock size={13} style={{ color: 'var(--color-txt3)' }} />
             <div>
@@ -154,19 +266,16 @@ export default function FmTicketDetail() {
           <div className="rounded-2xl border overflow-hidden" style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}>
             {timelineSteps.map((step, i) => {
               const meta = STATUS_META[step.key]
-              const done = !!step.ts
+              const done = i <= currentStepIdx
               const isLast = i === timelineSteps.length - 1
               return (
                 <div key={step.key} className="relative flex items-start gap-4 px-4 py-4">
-                  {/* Connector line */}
                   {!isLast && (
                     <div
                       className="absolute left-[27px] top-12 bottom-0 w-0.5"
                       style={{ background: done ? meta.color : 'var(--color-bg4)', opacity: done ? 0.3 : 1 }}
                     />
                   )}
-
-                  {/* Step dot */}
                   <div
                     className="relative z-10 w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5"
                     style={{
@@ -179,19 +288,15 @@ export default function FmTicketDetail() {
                       : <span className="w-2 h-2 rounded-full" style={{ background: 'var(--color-bg4)' }} />
                     }
                   </div>
-
-                  {/* Content */}
                   <div className="flex-1 pb-1" style={{ opacity: done ? 1 : 0.4 }}>
                     <p className="text-sm font-bold" style={{ color: done ? 'var(--color-txt1)' : 'var(--color-txt3)' }}>
                       {meta.label}
                     </p>
                     {done
-                      ? <p className="text-xs mt-0.5" style={{ color: 'var(--color-txt3)' }}>{fmt(step.ts)}</p>
+                      ? <p className="text-xs mt-0.5" style={{ color: 'var(--color-txt3)' }}>{fmt(step.ts) ?? '—'}</p>
                       : <p className="text-xs mt-0.5" style={{ color: 'var(--color-txt3)' }}>Not yet reached</p>
                     }
                   </div>
-
-                  {/* Active indicator */}
                   {i === currentStepIdx && (
                     <span className="text-xs font-semibold px-2 py-0.5 rounded-full self-center" style={{ background: meta.bg, color: meta.color }}>
                       Current
@@ -234,7 +339,7 @@ export default function FmTicketDetail() {
         )}
       </div>
 
-      {/* Status bottom sheet */}
+      {/* ── Status bottom sheet ── */}
       {showStatusSheet && (
         <div
           className="fixed inset-0 z-50 flex items-end"
@@ -278,6 +383,172 @@ export default function FmTicketDetail() {
             >
               Cancel
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit bottom sheet (super admin only) ── */}
+      {showEditSheet && (
+        <div
+          className="fixed inset-0 z-50 flex items-end"
+          style={{ background: 'var(--bg-overlay-60)' }}
+          onClick={() => setShowEditSheet(false)}
+        >
+          <div
+            className="w-full max-w-lg mx-auto rounded-t-3xl flex flex-col"
+            style={{ background: 'var(--color-bg1)', maxHeight: '88vh' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Sheet header */}
+            <div className="px-6 pt-5 pb-3 shrink-0">
+              <div className="w-10 h-1 rounded-full mx-auto mb-4" style={{ background: 'var(--color-bg4)' }} />
+              <p className="text-base font-bold" style={{ color: 'var(--color-txt1)' }}>Edit Ticket</p>
+            </div>
+
+            {/* Scrollable fields */}
+            <div className="overflow-y-auto px-6 pb-4 flex flex-col gap-4">
+              <EditSelect
+                label="Building"
+                value={editForm.buildingId}
+                onChange={handleEditBuildingChange}
+              >
+                <option value="">Select building</option>
+                {(buildings as any[]).map((b: any) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </EditSelect>
+
+              <EditSelect
+                label="Floor"
+                value={editForm.floorId}
+                onChange={v => setEditForm(f => ({ ...f, floorId: v }))}
+              >
+                <option value="">Select floor</option>
+                {(floors as any[]).map((f: any) => (
+                  <option key={f.id} value={f.id}>{f.name}</option>
+                ))}
+              </EditSelect>
+
+              <EditSelect
+                label="Company"
+                value={editForm.companyId}
+                onChange={v => setEditForm(f => ({ ...f, companyId: v }))}
+              >
+                <option value="">Select company</option>
+                {(companies as any[]).map((c: any) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </EditSelect>
+
+              <EditSelect
+                label="Category"
+                value={editForm.categoryId}
+                onChange={v => setEditForm(f => ({ ...f, categoryId: v }))}
+              >
+                <option value="">Select category</option>
+                {(categories as any[]).map((c: any) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </EditSelect>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold" style={{ color: 'var(--color-txt3)' }}>Sub-category</label>
+                <input
+                  type="text"
+                  value={editForm.subCategory}
+                  onChange={e => setEditForm(f => ({ ...f, subCategory: e.target.value }))}
+                  placeholder="Optional"
+                  className="w-full rounded-xl px-3 text-sm outline-none border"
+                  style={{
+                    background: 'var(--color-bg2)',
+                    borderColor: 'var(--color-bg4)',
+                    color: 'var(--color-txt1)',
+                    height: 44,
+                    fontSize: 16,
+                  }}
+                  onFocus={e => (e.target.style.borderColor = 'var(--color-accent)')}
+                  onBlur={e => (e.target.style.borderColor = 'var(--color-bg4)')}
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold" style={{ color: 'var(--color-txt3)' }}>Description</label>
+                <textarea
+                  value={editForm.description}
+                  onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
+                  placeholder="Optional"
+                  rows={4}
+                  className="w-full rounded-xl px-3 py-3 text-sm outline-none border resize-none"
+                  style={{
+                    background: 'var(--color-bg2)',
+                    borderColor: 'var(--color-bg4)',
+                    color: 'var(--color-txt1)',
+                    fontSize: 16,
+                  }}
+                  onFocus={e => (e.target.style.borderColor = 'var(--color-accent)')}
+                  onBlur={e => (e.target.style.borderColor = 'var(--color-bg4)')}
+                />
+              </div>
+            </div>
+
+            {/* Sheet footer */}
+            <div className="px-6 pt-3 pb-6 shrink-0 flex flex-col gap-2.5 border-t" style={{ borderColor: 'var(--color-bg4)' }}>
+              <button
+                onClick={handleEdit}
+                disabled={editing}
+                className="w-full py-3.5 rounded-2xl text-sm font-bold disabled:opacity-50 transition-opacity hover:opacity-90"
+                style={{ background: 'var(--color-accent)', color: '#fff' }}
+              >
+                {editing ? 'Saving…' : 'Save Changes'}
+              </button>
+              <button
+                onClick={() => setShowEditSheet(false)}
+                className="w-full py-3.5 rounded-2xl text-sm font-semibold"
+                style={{ background: 'var(--color-bg3)', color: 'var(--color-txt2)' }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete confirmation (super admin only) ── */}
+      {showDeleteConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-6"
+          style={{ background: 'var(--bg-overlay-60)' }}
+          onClick={() => setShowDeleteConfirm(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-3xl p-6"
+            style={{ background: 'var(--color-bg1)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'var(--bg-danger-10)' }}>
+              <Trash2 size={22} style={{ color: 'var(--color-danger)' }} />
+            </div>
+            <p className="text-base font-bold text-center mb-1" style={{ color: 'var(--color-txt1)' }}>Delete Ticket?</p>
+            <p className="text-sm text-center mb-6" style={{ color: 'var(--color-txt3)' }}>
+              <span className="font-mono font-semibold" style={{ color: 'var(--color-txt2)' }}>{ticket.ticket_number}</span> will be permanently deleted. This cannot be undone.
+            </p>
+            <div className="flex flex-col gap-2.5">
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="w-full py-3.5 rounded-2xl text-sm font-bold disabled:opacity-50 transition-opacity hover:opacity-90"
+                style={{ background: 'var(--color-danger)', color: '#fff' }}
+              >
+                {deleting ? 'Deleting…' : 'Delete Ticket'}
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="w-full py-3.5 rounded-2xl text-sm font-semibold"
+                style={{ background: 'var(--color-bg3)', color: 'var(--color-txt2)' }}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}
