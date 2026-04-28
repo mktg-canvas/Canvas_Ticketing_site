@@ -17,28 +17,42 @@ export async function createTicket(
     files?: Express.Multer.File[]
   }
 ) {
-  const ticketNumber = await generateTicketNumber()
+  let createdTicket: Awaited<ReturnType<typeof prisma.ticket.create>> | null = null
 
-  const ticket = await prisma.ticket.create({
-    data: {
-      ticket_number: ticketNumber,
-      building_id: data.buildingId,
-      floor_id: data.floorId,
-      company_id: data.companyId,
-      category_id: data.categoryId,
-      sub_category: data.subCategory ?? null,
-      description: data.description ?? '',
-      status: (data.status as TicketStatus) ?? 'open',
-      opened_at: (!data.status || data.status === 'open') ? new Date() : undefined,
-      in_progress_at: data.status === 'in_progress' ? new Date() : undefined,
-      closed_at: data.status === 'closed' ? new Date() : undefined,
-      raised_by: actor.userId,
-    },
-  })
+  // Retry on unique constraint collision (concurrent creates can race on ticket_number)
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const ticketNumber = await generateTicketNumber()
+    try {
+      createdTicket = await prisma.ticket.create({
+        data: {
+          ticket_number: ticketNumber,
+          building_id: data.buildingId,
+          floor_id: data.floorId,
+          company_id: data.companyId,
+          category_id: data.categoryId,
+          sub_category: data.subCategory ?? null,
+          description: data.description ?? '',
+          status: (data.status as TicketStatus) ?? 'open',
+          opened_at: (!data.status || data.status === 'open') ? new Date() : undefined,
+          in_progress_at: data.status === 'in_progress' ? new Date() : undefined,
+          closed_at: data.status === 'closed' ? new Date() : undefined,
+          raised_by: actor.userId,
+        },
+      })
+      break
+    } catch (err) {
+      const isUniqueViolation = (err as any)?.code === 'P2002'
+      console.log(`[createTicket] attempt=${attempt} isUniqueViolation=${isUniqueViolation}`, (err as any)?.code)
+      if (isUniqueViolation && attempt < 4) continue
+      throw err
+    }
+  }
+
+  if (!createdTicket) throw { status: 500, message: 'Failed to generate a unique ticket number' }
 
   await prisma.ticketActivity.create({
     data: {
-      ticket_id: ticket.id,
+      ticket_id: createdTicket.id,
       actor_id: actor.userId,
       activity_type: 'created',
       new_value: data.status ?? 'open',
@@ -50,7 +64,7 @@ export async function createTicket(
       const url = await uploadFile(file.buffer, file.originalname, file.mimetype)
       await prisma.attachment.create({
         data: {
-          ticket_id: ticket.id,
+          ticket_id: createdTicket.id,
           uploaded_by: actor.userId,
           file_name: file.originalname,
           file_url: url,
@@ -61,7 +75,7 @@ export async function createTicket(
     }
   }
 
-  return getTicketById(ticket.id)
+  return getTicketById(createdTicket.id)
 }
 
 export async function listTickets(
