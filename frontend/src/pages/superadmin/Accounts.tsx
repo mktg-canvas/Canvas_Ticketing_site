@@ -5,6 +5,7 @@ import { isAxiosError } from 'axios'
 import { useBuildings, useCreateBuilding, useUpdateBuilding, useDeactivateBuilding } from '../../hooks/useBuildings'
 import { useFloors, useCreateFloor, useUpdateFloor, useDeactivateFloor } from '../../hooks/useFloors'
 import { useCompanies, useCreateCompany, useUpdateCompany, useDeactivateCompany } from '../../hooks/useCompanies'
+import type { CompanyLocation } from '../../types'
 import { useUsers, useCreateUser, useDeactivateUser, useUpdateUser } from '../../hooks/useUsers'
 
 const TABS = [
@@ -64,7 +65,7 @@ export default function Accounts() {
 
   const { data: buildings = [] } = useBuildings()
   const { data: floors = [] } = useFloors()
-  const { data: companies = [] } = useCompanies(undefined)
+  const { data: companies = [] } = useCompanies()
   const { data: users = [] } = useUsers()
   const fms = users.filter((u: any) => u.role === 'fm')
 
@@ -90,7 +91,7 @@ export default function Accounts() {
     if (item) {
       if (type === 'editBuilding') setForm({ name: item.name })
       if (type === 'editFloor') setForm({ name: item.name, buildingId: item.building_id })
-      if (type === 'editCompany') setForm({ name: item.name, buildingId: item.building_id || '' })
+      if (type === 'editCompany') setForm({ name: item.name })
       if (type === 'editFm') setForm({ name: item.name })
     } else {
       setForm({})
@@ -198,7 +199,17 @@ export default function Accounts() {
                 <div>
                   <p className="text-sm font-semibold" style={{ color: 'var(--color-txt1)' }}>{c.name}</p>
                   <p className="text-xs mt-0.5" style={{ color: 'var(--color-txt3)' }}>
-                    {c.building?.name || 'No building'} · {c._count?.tickets || 0} tickets
+                    {c.locations?.length === 0
+                      ? 'No location'
+                      : c.locations?.length === 1
+                        ? `${c.locations[0].building.name} · ${c.locations[0].floor.name}`
+                        : (() => {
+                            const uniqueBuildings = [...new Set(c.locations.map((l: CompanyLocation) => l.building_id))]
+                            return uniqueBuildings.length > 1
+                              ? `${uniqueBuildings.length} buildings · ${c.locations.length} floors`
+                              : `${c.locations[0].building.name} · ${c.locations.length} floors`
+                          })()
+                    } · {c._count?.tickets || 0} tickets
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -306,16 +317,11 @@ export default function Accounts() {
       {showModal === 'addCompany' && (
         <Modal title="Add Company" onClose={closeModal}>
           <Field label="Company Name *" value={f('name')} onChange={set('name')} placeholder="e.g. TechCorp India" />
-          <div className="flex flex-col gap-1 mb-3">
-            <label className="text-xs font-medium" style={{ color: 'var(--color-txt2)' }}>Building</label>
-            <select value={f('buildingId')} onChange={e => set('buildingId')(e.target.value)}
-              className={inputCls} style={inputStyle}>
-              <option value=''>— Select building —</option>
-              {buildings.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
-            </select>
-          </div>
+          <p className="text-xs mb-3" style={{ color: 'var(--color-txt3)' }}>
+            Building and floor locations are managed via the seed script.
+          </p>
           {error && <p className="text-xs mb-3" style={{ color: 'var(--color-danger)' }}>{error}</p>}
-          <button onClick={() => run(() => createCompany({ name: f('name'), buildingId: f('buildingId') || undefined }))}
+          <button onClick={() => run(() => createCompany({ name: f('name') }))}
             disabled={creatingCompany || !f('name')}
             className="w-full py-2.5 rounded-lg text-sm font-semibold disabled:opacity-50"
             style={{ background: 'var(--color-accent)', color: '#fff' }}>
@@ -328,16 +334,20 @@ export default function Accounts() {
       {showModal === 'editCompany' && (
         <Modal title="Edit Company" onClose={closeModal}>
           <Field label="Company Name *" value={f('name')} onChange={set('name')} />
-          <div className="flex flex-col gap-1 mb-3">
-            <label className="text-xs font-medium" style={{ color: 'var(--color-txt2)' }}>Building</label>
-            <select value={f('buildingId')} onChange={e => set('buildingId')(e.target.value)}
-              className={inputCls} style={inputStyle}>
-              <option value=''>— Select building —</option>
-              {buildings.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
-            </select>
-          </div>
+          {selected?.locations?.length > 0 && (
+            <div className="mb-3">
+              <label className="text-xs font-medium block mb-1" style={{ color: 'var(--color-txt2)' }}>Locations</label>
+              <div className="flex flex-col gap-1">
+                {selected.locations.map((l: CompanyLocation) => (
+                  <p key={l.id} className="text-xs px-3 py-1.5 rounded-lg" style={{ background: 'var(--color-bg3)', color: 'var(--color-txt2)' }}>
+                    {l.building.name} · {l.floor.name}
+                  </p>
+                ))}
+              </div>
+            </div>
+          )}
           {error && <p className="text-xs mb-3" style={{ color: 'var(--color-danger)' }}>{error}</p>}
-          <button onClick={() => run(() => updateCompany({ id: selected.id, name: f('name'), buildingId: f('buildingId') || undefined }))}
+          <button onClick={() => run(() => updateCompany({ id: selected.id, name: f('name') }))}
             disabled={updatingCompany || !f('name')}
             className="w-full py-2.5 rounded-lg text-sm font-semibold disabled:opacity-50"
             style={{ background: 'var(--color-accent)', color: '#fff' }}>

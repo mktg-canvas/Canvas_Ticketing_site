@@ -1,21 +1,22 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../lib/axios'
 
-export function useCompanies(buildingId?: string) {
+export function useCompanies() {
   return useQuery({
-    queryKey: ['companies', buildingId],
+    queryKey: ['companies'],
     queryFn: async () => {
-      const { data } = await api.get('/companies', { params: buildingId ? { buildingId } : {} })
+      const { data } = await api.get('/companies')
       return data.companies
     },
+    staleTime: 0, // always re-fetch on mount so locations are always current
   })
 }
 
 export function useCreateCompany() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ name, buildingId }: { name: string; buildingId?: string }) => {
-      const { data } = await api.post('/companies', { name, buildingId })
+    mutationFn: async ({ name }: { name: string }) => {
+      const { data } = await api.post('/companies', { name })
       return data.company
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['companies'] }),
@@ -25,8 +26,8 @@ export function useCreateCompany() {
 export function useUpdateCompany() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, name, buildingId }: { id: string; name: string; buildingId?: string }) => {
-      const { data } = await api.patch(`/companies/${id}`, { name, buildingId })
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+      const { data } = await api.patch(`/companies/${id}`, { name })
       return data.company
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['companies'] }),

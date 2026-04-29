@@ -25,11 +25,21 @@ export interface Floor {
   _count?: { tickets: number }
 }
 
+export interface CompanyLocation {
+  id: string
+  company_id: string
+  building_id: string
+  floor_id: string
+  building: { id: string; name: string }
+  floor: { id: string; name: string }
+}
+
 export interface Company {
   id: string
   name: string
   is_active: boolean
   created_at: string
+  locations: CompanyLocation[]
   _count?: { tickets: number }
 }
 
