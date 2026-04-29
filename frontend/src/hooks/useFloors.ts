@@ -1,13 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../lib/axios'
 
-export function useFloors(buildingId?: string) {
+export function useFloors(buildingId?: string, enabled = true) {
   return useQuery({
     queryKey: ['floors', buildingId],
     queryFn: async () => {
       const { data } = await api.get('/floors', { params: buildingId ? { buildingId } : {} })
       return data.floors
     },
+    enabled,
   })
 }
 

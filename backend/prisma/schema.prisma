@@ -47,8 +47,8 @@ model Building {
   updated_at DateTime @updatedAt @db.Timestamptz
 
   floors    Floor[]
-  companies Company[]
   tickets   Ticket[]
+  locations CompanyLocation[]
 
   @@map("buildings")
 }
@@ -61,24 +61,39 @@ model Floor {
   created_at  DateTime @default(now()) @db.Timestamptz
   updated_at  DateTime @updatedAt @db.Timestamptz
 
-  building Building @relation(fields: [building_id], references: [id], onDelete: Cascade)
-  tickets  Ticket[]
+  building  Building          @relation(fields: [building_id], references: [id], onDelete: Cascade)
+  tickets   Ticket[]
+  locations CompanyLocation[]
 
   @@map("floors")
 }
 
 model Company {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        String   @db.VarChar(255)
-  building_id String?  @db.Uuid
-  is_active   Boolean  @default(true)
-  created_at  DateTime @default(now()) @db.Timestamptz
-  updated_at  DateTime @updatedAt @db.Timestamptz
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String   @db.VarChar(255)
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz
+  updated_at DateTime @updatedAt @db.Timestamptz
 
-  building Building? @relation(fields: [building_id], references: [id], onDelete: SetNull)
-  tickets  Ticket[]
+  tickets   Ticket[]
+  locations CompanyLocation[]
 
   @@map("companies")
+}
+
+model CompanyLocation {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  company_id  String   @db.Uuid
+  building_id String   @db.Uuid
+  floor_id    String   @db.Uuid
+  created_at  DateTime @default(now()) @db.Timestamptz
+
+  company  Company  @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  building Building @relation(fields: [building_id], references: [id], onDelete: Cascade)
+  floor    Floor    @relation(fields: [floor_id], references: [id], onDelete: Cascade)
+
+  @@unique([company_id, building_id, floor_id])
+  @@map("company_locations")
 }
 
 model User {

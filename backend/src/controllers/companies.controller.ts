@@ -2,9 +2,9 @@ import { Response } from 'express'
 import * as companiesService from '../services/companies.service'
 import { AuthRequest } from '../types'
 
-export async function listCompanies(req: AuthRequest, res: Response): Promise<void> {
+export async function listCompanies(_req: AuthRequest, res: Response): Promise<void> {
   try {
-    const companies = await companiesService.listCompanies(req.query.buildingId as string | undefined)
+    const companies = await companiesService.listCompanies()
     res.json({ companies })
   } catch (err: any) {
     res.status(500).json({ error: err.message })
@@ -12,10 +12,10 @@ export async function listCompanies(req: AuthRequest, res: Response): Promise<vo
 }
 
 export async function createCompany(req: AuthRequest, res: Response): Promise<void> {
-  const { name, buildingId } = req.body
+  const { name } = req.body
   if (!name?.trim()) { res.status(400).json({ error: 'name required' }); return }
   try {
-    const company = await companiesService.createCompany(name.trim(), buildingId)
+    const company = await companiesService.createCompany(name.trim())
     res.status(201).json({ company })
   } catch (err: any) {
     res.status(500).json({ error: err.message })
@@ -23,10 +23,10 @@ export async function createCompany(req: AuthRequest, res: Response): Promise<vo
 }
 
 export async function updateCompany(req: AuthRequest, res: Response): Promise<void> {
-  const { name, buildingId } = req.body
+  const { name } = req.body
   if (!name?.trim()) { res.status(400).json({ error: 'name required' }); return }
   try {
-    const company = await companiesService.updateCompany(req.params.id as string, name.trim(), buildingId)
+    const company = await companiesService.updateCompany(req.params.id as string, name.trim())
     res.json({ company })
   } catch (err: any) {
     res.status(500).json({ error: err.message })

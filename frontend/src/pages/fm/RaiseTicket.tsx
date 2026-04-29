@@ -1,10 +1,10 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Camera, X, ChevronDown } from 'lucide-react'
 import { isAxiosError } from 'axios'
+import { useCompanies } from '../../hooks/useCompanies'
 import { useBuildings } from '../../hooks/useBuildings'
 import { useFloors } from '../../hooks/useFloors'
-import { useCompanies } from '../../hooks/useCompanies'
 import { useCategories } from '../../hooks/useCategories'
 import { useCreateTicket } from '../../hooks/useTickets'
 import { useAuthStore } from '../../store/authStore'
@@ -19,6 +19,14 @@ const STATUSES = [
 
 type StatusValue = 'open' | 'in_progress' | 'closed'
 
+function sortByFloorOrder(floors: any[]) {
+  return [...floors].sort((a, b) => {
+    const ai = FLOOR_ORDER.indexOf(a.name)
+    const bi = FLOOR_ORDER.indexOf(b.name)
+    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
+  })
+}
+
 function Label({ text, optional }: { text: string; optional?: boolean }) {
   return (
     <label className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5" style={{ color: 'var(--color-txt3)' }}>
@@ -29,15 +37,18 @@ function Label({ text, optional }: { text: string; optional?: boolean }) {
 }
 
 function SelectField({
-  label, required, disabled, value, onChange, placeholder, children,
+  label, required, disabled, value, onChange, placeholder, children, hint,
 }: {
   label: string; required?: boolean; disabled?: boolean
   value: string; onChange: (v: string) => void
-  placeholder: string; children: React.ReactNode
+  placeholder: string; children: React.ReactNode; hint?: string
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <Label text={required ? `${label} *` : label} />
+      <div className="flex items-center gap-2">
+        <Label text={required ? `${label} *` : label} />
+        {hint && <span className="text-xs font-normal" style={{ color: 'var(--color-accent)' }}>{hint}</span>}
+      </div>
       <div className="relative">
         <select
           value={value}
@@ -48,11 +59,11 @@ function SelectField({
             background: 'var(--color-bg1)',
             borderColor: 'var(--color-bg4)',
             color: value ? 'var(--color-txt1)' : 'var(--color-txt3)',
-            opacity: disabled ? 0.5 : 1,
+            opacity: disabled ? 0.6 : 1,
             height: 52,
             cursor: disabled ? 'not-allowed' : 'pointer',
           }}
-          onFocus={e => (e.target.style.borderColor = 'var(--color-accent)')}
+          onFocus={e => { if (!disabled) e.target.style.borderColor = 'var(--color-accent)' }}
           onBlur={e => (e.target.style.borderColor = 'var(--color-bg4)')}
         >
           <option value=''>{placeholder}</option>
@@ -98,34 +109,18 @@ function StatusField({ value, onChange }: { value: StatusValue; onChange: (v: St
         >
           <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: current.color }} />
           <span className="flex-1">{current.label}</span>
-          <ChevronDown
-            size={16}
-            style={{
-              color: 'var(--color-txt3)',
-              transform: open ? 'rotate(180deg)' : 'rotate(0)',
-              transition: 'transform 0.15s',
-            }}
-          />
+          <ChevronDown size={16} style={{ color: 'var(--color-txt3)', transform: open ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.15s' }} />
         </button>
 
         {open && (
-          <div
-            className="absolute left-0 right-0 z-20 mt-1 rounded-xl border overflow-hidden shadow-lg"
-            style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}
-          >
+          <div className="absolute left-0 right-0 z-20 mt-1 rounded-xl border overflow-hidden shadow-lg"
+            style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}>
             {STATUSES.map(s => (
-              <button
-                key={s.value}
-                type="button"
-                onClick={() => { onChange(s.value); setOpen(false) }}
+              <button key={s.value} type="button" onClick={() => { onChange(s.value); setOpen(false) }}
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm text-left transition-colors"
-                style={{
-                  background: value === s.value ? 'var(--color-bg3)' : 'transparent',
-                  color: value === s.value ? 'var(--color-txt1)' : 'var(--color-txt2)',
-                }}
+                style={{ background: value === s.value ? 'var(--color-bg3)' : 'transparent', color: value === s.value ? 'var(--color-txt1)' : 'var(--color-txt2)' }}
                 onMouseEnter={e => { if (value !== s.value) e.currentTarget.style.background = 'var(--color-bg2)' }}
-                onMouseLeave={e => { if (value !== s.value) e.currentTarget.style.background = 'transparent' }}
-              >
+                onMouseLeave={e => { if (value !== s.value) e.currentTarget.style.background = 'transparent' }}>
                 <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.color }} />
                 {s.label}
               </button>
@@ -144,9 +139,9 @@ export default function RaiseTicket() {
   const [error, setError] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
 
+  const [companyId, setCompanyId] = useState('')
   const [buildingId, setBuildingId] = useState('')
   const [floorId, setFloorId] = useState('')
-  const [companyId, setCompanyId] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [status, setStatus] = useState<StatusValue>('open')
   const [subCategory, setSubCategory] = useState('')
@@ -154,19 +149,86 @@ export default function RaiseTicket() {
   const [photos, setPhotos] = useState<File[]>([])
 
   const { data: categories = [] } = useCategories()
-  const { data: buildings = [] } = useBuildings()
-  const { data: rawFloors = [] } = useFloors(buildingId || undefined)
-  const floors = [...rawFloors].sort((a: any, b: any) => {
-    const ai = FLOOR_ORDER.indexOf(a.name)
-    const bi = FLOOR_ORDER.indexOf(b.name)
-    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
-  })
-  const { data: companies = [] } = useCompanies(buildingId || undefined)
+  const { data: rawCompanies = [] } = useCompanies()
+  const { data: allBuildings = [] } = useBuildings()
+  // Only fetch floors when in "Others" mode and a building is selected
+  const { data: rawOthersFloors = [] } = useFloors(buildingId || undefined, !!(buildingId))
+
+  // "Others" goes to the bottom of the list
+  const companies = useMemo(() => {
+    const others = (rawCompanies as any[]).filter((c: any) => c.name === 'Others')
+    const rest = (rawCompanies as any[]).filter((c: any) => c.name !== 'Others')
+    return [...rest, ...others]
+  }, [rawCompanies])
+
+  const selectedCompany = useMemo(
+    () => companies.find((c: any) => c.id === companyId) ?? null,
+    [companies, companyId]
+  )
+
+  // Unique buildings for the selected company (from its locations)
+  const companyBuildings = useMemo(() => {
+    const locs: any[] = selectedCompany?.locations ?? []
+    if (!locs.length) return []
+    const seen = new Set<string>()
+    return locs
+      .filter(l => { if (seen.has(l.building_id)) return false; seen.add(l.building_id); return true })
+      .map(l => l.building)
+      .sort((a: any, b: any) => a.name.localeCompare(b.name))
+  }, [selectedCompany])
+
+  // Floors for the selected company + building (from its locations)
+  const companyFloors = useMemo(() => {
+    const locs: any[] = selectedCompany?.locations ?? []
+    if (!locs.length || !buildingId) return []
+    return sortByFloorOrder(
+      locs.filter(l => l.building_id === buildingId).map(l => l.floor)
+    )
+  }, [selectedCompany, buildingId])
+
+  // "Others" mode: company has no location mapping → free building+floor selection
+  const isOthersMode = !!(companyId && companyBuildings.length === 0)
+
+  const buildingAutoFilled = !isOthersMode && companyBuildings.length === 1
+  const floorAutoFilled = !isOthersMode && companyFloors.length === 1
+
+  // Options to render
+  const buildingOptions = isOthersMode ? allBuildings : companyBuildings
+  const floorOptions = isOthersMode
+    ? sortByFloorOrder(rawOthersFloors as any[])
+    : companyFloors
+
+  function handleCompanyChange(id: string) {
+    setCompanyId(id)
+    setBuildingId('')
+    setFloorId('')
+
+    const company = companies.find((c: any) => c.id === id)
+    const locs: any[] = company?.locations ?? []
+    if (!locs.length) return // Others or unlinked company → user picks manually
+
+    const uniqueBuildings = [...new Set(locs.map(l => l.building_id))]
+    if (uniqueBuildings.length === 1) {
+      const bid = uniqueBuildings[0] as string
+      setBuildingId(bid)
+      const floorsInBuilding = locs.filter(l => l.building_id === bid)
+      if (floorsInBuilding.length === 1) {
+        setFloorId(floorsInBuilding[0].floor_id)
+      }
+    }
+  }
 
   function handleBuildingChange(id: string) {
     setBuildingId(id)
     setFloorId('')
-    setCompanyId('')
+
+    if (isOthersMode) return // in Others mode, user picks floor manually
+
+    const locs: any[] = selectedCompany?.locations ?? []
+    const floorsInBuilding = locs.filter(l => l.building_id === id)
+    if (floorsInBuilding.length === 1) {
+      setFloorId(floorsInBuilding[0].floor_id)
+    }
   }
 
   function addPhotos(files: FileList | null) {
@@ -207,32 +269,55 @@ export default function RaiseTicket() {
     }
   }
 
-  const textFieldStyle = {
-    background: 'var(--color-bg1)',
-    borderColor: 'var(--color-bg4)',
-    color: 'var(--color-txt1)',
-  }
+  const textFieldStyle = { background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)', color: 'var(--color-txt1)' }
   const textFieldCls = 'w-full rounded-xl px-4 py-3.5 text-sm outline-none border'
 
   return (
     <div className="min-h-screen pb-8" style={{ background: 'var(--color-bg0)' }}>
-      <div className="sticky top-0 z-10 px-4 py-3 border-b flex items-center gap-3" style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}>
+      <div className="sticky top-0 z-10 px-4 py-3 border-b flex items-center gap-3"
+        style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}>
         <button onClick={() => navigate(-1)}><ArrowLeft size={20} style={{ color: 'var(--color-txt2)' }} /></button>
         <h1 className="text-sm font-semibold" style={{ color: 'var(--color-txt1)' }}>Raise New Ticket</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="p-4 max-w-lg mx-auto flex flex-col gap-5">
 
-        <SelectField label="Building" required value={buildingId} onChange={handleBuildingChange} placeholder="Select building">
-          {buildings.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
+        {/* 1. Company — drives building + floor */}
+        <SelectField label="Company" required value={companyId} onChange={handleCompanyChange} placeholder="Select company">
+          {companies.map((c: any) => (
+            <option key={c.id} value={c.id}
+              style={c.name === 'Others' ? { fontStyle: 'italic' } : undefined}>
+              {c.name}
+            </option>
+          ))}
         </SelectField>
 
-        <SelectField label="Floor" required disabled={!buildingId} value={floorId} onChange={setFloorId} placeholder="Select floor">
-          {floors.map((f: any) => <option key={f.id} value={f.id}>{f.name}</option>)}
+        {/* 2. Building — auto-filled for single-location companies; free pick for Others */}
+        <SelectField
+          label="Building" required
+          disabled={!companyId || buildingAutoFilled}
+          value={buildingId}
+          onChange={handleBuildingChange}
+          placeholder={companyId ? 'Select building' : 'Select company first'}
+          hint={buildingAutoFilled && buildingId ? '(auto-filled)' : undefined}
+        >
+          {(buildingOptions as any[]).map((b: any) => (
+            <option key={b.id} value={b.id}>{b.name}</option>
+          ))}
         </SelectField>
 
-        <SelectField label="Company" required value={companyId} onChange={setCompanyId} placeholder="Select company">
-          {companies.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+        {/* 3. Floor — auto-filled for single-floor companies; free pick for Others */}
+        <SelectField
+          label="Floor" required
+          disabled={!buildingId || floorAutoFilled}
+          value={floorId}
+          onChange={setFloorId}
+          placeholder={buildingId ? 'Select floor' : 'Select building first'}
+          hint={floorAutoFilled && floorId ? '(auto-filled)' : undefined}
+        >
+          {(floorOptions as any[]).map((f: any) => (
+            <option key={f.id} value={f.id}>{f.name}</option>
+          ))}
         </SelectField>
 
         <SelectField label="Issue Category" required value={categoryId} onChange={setCategoryId} placeholder="Select category">
@@ -244,30 +329,21 @@ export default function RaiseTicket() {
         {/* Sub-category */}
         <div className="flex flex-col gap-1.5">
           <Label text="Sub-category" optional />
-          <input
-            value={subCategory}
-            onChange={e => setSubCategory(e.target.value)}
+          <input value={subCategory} onChange={e => setSubCategory(e.target.value)}
             placeholder="e.g. socket not working, pipe leaking"
-            className={textFieldCls}
-            style={textFieldStyle}
+            className={textFieldCls} style={textFieldStyle}
             onFocus={e => (e.target.style.borderColor = 'var(--color-accent)')}
-            onBlur={e => (e.target.style.borderColor = 'var(--color-bg4)')}
-          />
+            onBlur={e => (e.target.style.borderColor = 'var(--color-bg4)')} />
         </div>
 
         {/* Description */}
         <div className="flex flex-col gap-1.5">
           <Label text="Description" optional />
-          <textarea
-            value={description}
-            onChange={e => setDescription(e.target.value)}
-            placeholder="Describe the issue in detail..."
-            rows={4}
-            className={`${textFieldCls} resize-none`}
-            style={textFieldStyle}
+          <textarea value={description} onChange={e => setDescription(e.target.value)}
+            placeholder="Describe the issue in detail..." rows={4}
+            className={`${textFieldCls} resize-none`} style={textFieldStyle}
             onFocus={e => (e.target.style.borderColor = 'var(--color-accent)')}
-            onBlur={e => (e.target.style.borderColor = 'var(--color-bg4)')}
-          />
+            onBlur={e => (e.target.style.borderColor = 'var(--color-bg4)')} />
         </div>
 
         {/* Photos */}
@@ -281,11 +357,10 @@ export default function RaiseTicket() {
               {photos.map((f, i) => (
                 <div key={i} className="relative rounded-xl overflow-hidden aspect-square"
                   style={{ background: 'var(--color-bg3)' }}>
-                  {f.type.startsWith('image/') ? (
-                    <img src={URL.createObjectURL(f)} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-xs" style={{ color: 'var(--color-txt2)' }}>PDF</div>
-                  )}
+                  {f.type.startsWith('image/')
+                    ? <img src={URL.createObjectURL(f)} alt="" className="w-full h-full object-cover" />
+                    : <div className="w-full h-full flex items-center justify-center text-xs" style={{ color: 'var(--color-txt2)' }}>PDF</div>
+                  }
                   <button type="button" onClick={() => removePhoto(i)}
                     className="absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center"
                     style={{ background: 'rgba(0,0,0,0.6)' }}>
@@ -311,12 +386,9 @@ export default function RaiseTicket() {
           </p>
         )}
 
-        <button
-          type="submit"
-          disabled={isPending || !canSubmit}
+        <button type="submit" disabled={isPending || !canSubmit}
           className="w-full py-4 rounded-xl text-sm font-semibold transition-opacity disabled:opacity-50"
-          style={{ background: 'var(--color-accent)', color: '#fff', minHeight: '52px' }}
-        >
+          style={{ background: 'var(--color-accent)', color: '#fff', minHeight: '52px' }}>
           {isPending ? 'Submitting...' : 'Submit Ticket'}
         </button>
       </form>
