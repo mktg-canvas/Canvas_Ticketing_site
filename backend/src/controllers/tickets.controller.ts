@@ -123,8 +123,9 @@ export async function deleteTicket(req: AuthRequest, res: Response): Promise<voi
 export async function uploadAttachment(req: AuthRequest, res: Response): Promise<void> {
   const file = req.file
   if (!file) { res.status(400).json({ error: 'No file uploaded' }); return }
+  const stage = ['open', 'in_progress', 'closed'].includes(req.body.stage) ? req.body.stage : null
   try {
-    const attachment = await ticketsService.uploadAttachment(req.user!, req.params.id as string, file)
+    const attachment = await ticketsService.uploadAttachment(req.user!, req.params.id as string, file, stage)
     res.status(201).json({ attachment })
   } catch (err: any) {
     res.status(err.status || 500).json({ error: err.message })

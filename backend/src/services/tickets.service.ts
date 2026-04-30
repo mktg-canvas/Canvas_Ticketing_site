@@ -237,7 +237,7 @@ export async function deleteTicket(_actor: JwtPayload, ticketId: string) {
   await prisma.ticket.delete({ where: { id: ticketId } })
 }
 
-export async function uploadAttachment(actor: JwtPayload, ticketId: string, file: Express.Multer.File) {
+export async function uploadAttachment(actor: JwtPayload, ticketId: string, file: Express.Multer.File, stage?: string | null) {
   const url = await uploadFile(file.buffer, file.originalname, file.mimetype)
   const attachment = await prisma.attachment.create({
     data: {
@@ -247,6 +247,7 @@ export async function uploadAttachment(actor: JwtPayload, ticketId: string, file
       file_url: url,
       file_size: file.size,
       mime_type: file.mimetype,
+      stage: stage ?? null,
     },
   })
   await prisma.ticketActivity.create({
@@ -254,7 +255,7 @@ export async function uploadAttachment(actor: JwtPayload, ticketId: string, file
       ticket_id: ticketId,
       actor_id: actor.userId,
       activity_type: 'attachment_added',
-      new_value: file.originalname,
+      new_value: stage ? `${file.originalname} (${stage})` : file.originalname,
     },
   })
   return attachment
