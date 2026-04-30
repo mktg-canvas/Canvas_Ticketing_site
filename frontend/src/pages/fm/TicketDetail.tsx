@@ -291,65 +291,10 @@ export default function FmTicketDetail() {
           </div>
         </div>
 
-        {/* Status Timeline */}
-        <div>
-          <p className="text-xs font-bold uppercase tracking-wider mb-2.5 px-1" style={{ color: 'var(--color-txt3)' }}>Status Timeline</p>
-          <div className="rounded-2xl border overflow-hidden" style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}>
-            {timelineSteps.map((step, i) => {
-              const meta = STATUS_META[step.key]
-              const done = i <= currentStepIdx
-              const isLast = i === timelineSteps.length - 1
-              return (
-                <div key={step.key} className="relative flex items-start gap-4 px-4 py-4">
-                  {!isLast && (
-                    <div
-                      className="absolute left-[27px] top-12 bottom-0 w-0.5"
-                      style={{ background: done ? meta.color : 'var(--color-bg4)', opacity: done ? 0.3 : 1 }}
-                    />
-                  )}
-                  <div
-                    className="relative w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5"
-                    style={{
-                      background: done ? meta.bg : 'var(--color-bg3)',
-                      border: `2px solid ${done ? meta.color : 'var(--color-bg4)'}`,
-                    }}
-                  >
-                    {done
-                      ? <CheckCircle size={13} style={{ color: meta.color }} />
-                      : <span className="w-2 h-2 rounded-full" style={{ background: 'var(--color-bg4)' }} />
-                    }
-                  </div>
-                  <div className="flex-1 pb-1" style={{ opacity: done ? 1 : 0.4 }}>
-                    <p className="text-sm font-bold" style={{ color: done ? 'var(--color-txt1)' : 'var(--color-txt3)' }}>
-                      {meta.label}
-                    </p>
-                    {done
-                      ? <p className="text-xs mt-0.5" style={{ color: 'var(--color-txt3)' }}>{fmt(step.ts) ?? '—'}</p>
-                      : <p className="text-xs mt-0.5" style={{ color: 'var(--color-txt3)' }}>Not yet reached</p>
-                    }
-                  </div>
-                  {i === currentStepIdx && (
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full self-center" style={{ background: meta.bg, color: meta.color }}>
-                      Current
-                    </span>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </div>
-
         {/* Hidden file input for stage photo uploads */}
-        <input
-          ref={stageFileRef}
-          type="file"
-          accept="image/*"
-          multiple
-          className="hidden"
-          onChange={handleStageFileChange}
-        />
+        <input ref={stageFileRef} type="file" accept="image/*" multiple className="hidden" onChange={handleStageFileChange} />
 
-        {/* Initial Photos (raised with ticket) */}
+        {/* Initial raise photos */}
         {(() => {
           const initial = (ticket as any).attachments?.filter((a: any) => !a.stage) ?? []
           if (!initial.length) return null
@@ -377,56 +322,68 @@ export default function FmTicketDetail() {
           )
         })()}
 
-        {/* Progress Photos */}
+        {/* Status Timeline — each step owns its stage photos inline */}
         <div>
-          <p className="text-xs font-bold uppercase tracking-wider mb-2.5 px-1" style={{ color: 'var(--color-txt3)' }}>
-            Progress Photos
-          </p>
+          <p className="text-xs font-bold uppercase tracking-wider mb-2.5 px-1" style={{ color: 'var(--color-txt3)' }}>Status Timeline</p>
           <div className="rounded-2xl border overflow-hidden" style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}>
-            {([
-              { key: 'open',        label: 'Opened',      ts: ticket.opened_at,      meta: STATUS_META.open },
-              { key: 'in_progress', label: 'In Progress', ts: ticket.in_progress_at, meta: STATUS_META.in_progress },
-              { key: 'closed',      label: 'Closed',      ts: ticket.closed_at,      meta: STATUS_META.closed },
-            ] as const).map(({ key, label, ts, meta }, i) => {
-              const stagePhotos: any[] = (ticket as any).attachments?.filter((a: any) => a.stage === key) ?? []
-              const isUploading = uploading && uploadingStage === key
+            {timelineSteps.map((step, i) => {
+              const meta = STATUS_META[step.key]
+              const done = i <= currentStepIdx
+              const isLast = i === timelineSteps.length - 1
+              const stagePhotos: any[] = (ticket as any).attachments?.filter((a: any) => a.stage === step.key) ?? []
+              const isUploading = uploading && uploadingStage === step.key
               return (
-                <div key={key} className={i > 0 ? 'border-t' : ''} style={{ borderColor: 'var(--color-bg4)' }}>
-                  <div className="px-4 pt-4 pb-3">
-                    {/* Stage header */}
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full shrink-0"
-                          style={{ background: ts ? meta.color : 'var(--color-bg4)' }} />
-                        <p className="text-sm font-semibold" style={{ color: 'var(--color-txt1)' }}>
-                          {label}
-                        </p>
-                        {stagePhotos.length > 0 && (
-                          <span className="text-xs px-1.5 py-0.5 rounded-md font-semibold"
-                            style={{ background: 'var(--color-bg3)', color: 'var(--color-txt3)' }}>
-                            {stagePhotos.length}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {ts && <span className="text-xs" style={{ color: 'var(--color-txt3)' }}>{fmt(ts)}</span>}
-                        <button
-                          onClick={() => openStageUpload(key)}
-                          disabled={isUploading}
-                          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50 transition-opacity"
-                          style={{ background: 'var(--color-bg3)', color: 'var(--color-txt2)' }}
-                        >
-                          {isUploading
-                            ? <span className="w-3 h-3 rounded-full border-2 animate-spin" style={{ borderColor: 'var(--color-txt2)', borderTopColor: 'transparent' }} />
-                            : <><Camera size={12} /><span>Add Photo</span></>
-                          }
-                        </button>
-                      </div>
+                <div key={step.key} className="relative flex gap-4 px-4 pt-4 pb-4">
+                  {/* Vertical connector */}
+                  {!isLast && (
+                    <div className="absolute left-[27px] top-12 bottom-0 w-0.5"
+                      style={{ background: done ? meta.color : 'var(--color-bg4)', opacity: done ? 0.3 : 1 }} />
+                  )}
+
+                  {/* Circle */}
+                  <div className="relative w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5"
+                    style={{ background: done ? meta.bg : 'var(--color-bg3)', border: `2px solid ${done ? meta.color : 'var(--color-bg4)'}` }}>
+                    {done
+                      ? <CheckCircle size={13} style={{ color: meta.color }} />
+                      : <span className="w-2 h-2 rounded-full" style={{ background: 'var(--color-bg4)' }} />
+                    }
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    {/* Row: label + timestamp + current badge + add button */}
+                    <div className="flex items-center gap-2 flex-wrap mb-2">
+                      <p className="text-sm font-bold" style={{ color: done ? 'var(--color-txt1)' : 'var(--color-txt3)' }}>
+                        {meta.label}
+                      </p>
+                      {done
+                        ? <span className="text-xs" style={{ color: 'var(--color-txt3)' }}>{fmt(step.ts) ?? '—'}</span>
+                        : <span className="text-xs" style={{ color: 'var(--color-txt3)' }}>Not yet reached</span>
+                      }
+                      {i === currentStepIdx && (
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: meta.bg, color: meta.color }}>
+                          Current
+                        </span>
+                      )}
+                      {stagePhotos.length > 0 && (
+                        <span className="text-xs px-1.5 py-0.5 rounded-md font-semibold"
+                          style={{ background: 'var(--color-bg3)', color: 'var(--color-txt3)' }}>
+                          {stagePhotos.length} photo{stagePhotos.length > 1 ? 's' : ''}
+                        </span>
+                      )}
+                      <button onClick={() => openStageUpload(step.key)} disabled={isUploading}
+                        className="ml-auto flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold disabled:opacity-50 shrink-0"
+                        style={{ background: 'var(--color-bg3)', color: 'var(--color-txt2)' }}>
+                        {isUploading
+                          ? <span className="w-3 h-3 rounded-full border-2 animate-spin" style={{ borderColor: 'var(--color-txt2)', borderTopColor: 'transparent' }} />
+                          : <><Camera size={11} /><span>Add</span></>
+                        }
+                      </button>
                     </div>
 
-                    {/* Photos grid */}
+                    {/* Photos */}
                     {stagePhotos.length > 0 ? (
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-3 gap-2 mb-1">
                         {stagePhotos.map((a: any) => (
                           <a key={a.id} href={a.file_url} target="_blank" rel="noreferrer"
                             className="rounded-xl overflow-hidden aspect-square border block transition-opacity hover:opacity-90"
@@ -440,18 +397,17 @@ export default function FmTicketDetail() {
                             }
                           </a>
                         ))}
-                        <button onClick={() => openStageUpload(key)} disabled={isUploading}
-                          className="rounded-xl aspect-square border-2 border-dashed flex items-center justify-center transition-opacity disabled:opacity-50"
+                        <button onClick={() => openStageUpload(step.key)} disabled={isUploading}
+                          className="rounded-xl aspect-square border-2 border-dashed flex items-center justify-center disabled:opacity-50"
                           style={{ borderColor: 'var(--color-bg4)', color: 'var(--color-txt3)' }}>
-                          <Plus size={16} />
+                          <Plus size={15} />
                         </button>
                       </div>
                     ) : (
-                      <button onClick={() => openStageUpload(key)} disabled={isUploading}
-                        className="w-full flex items-center justify-center gap-2 py-4 rounded-xl border-2 border-dashed text-sm transition-opacity disabled:opacity-50"
+                      <button onClick={() => openStageUpload(step.key)} disabled={isUploading}
+                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed text-xs mb-1 disabled:opacity-50"
                         style={{ borderColor: 'var(--color-bg4)', color: 'var(--color-txt3)' }}>
-                        <Camera size={16} />
-                        Add {label} photos
+                        <Camera size={14} /> Add {meta.label} photos
                       </button>
                     )}
                   </div>
