@@ -387,7 +387,6 @@ export default function FmTicketDetail() {
               { key: 'in_progress', label: 'In Progress', ts: ticket.in_progress_at, meta: STATUS_META.in_progress },
               { key: 'closed',      label: 'Closed',      ts: ticket.closed_at,      meta: STATUS_META.closed },
             ] as const).map(({ key, label, ts, meta }, i) => {
-              const reached = !!ts
               const stagePhotos: any[] = (ticket as any).attachments?.filter((a: any) => a.stage === key) ?? []
               const isUploading = uploading && uploadingStage === key
               return (
@@ -397,8 +396,8 @@ export default function FmTicketDetail() {
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <span className="w-2.5 h-2.5 rounded-full shrink-0"
-                          style={{ background: reached ? meta.color : 'var(--color-bg4)' }} />
-                        <p className="text-sm font-semibold" style={{ color: reached ? 'var(--color-txt1)' : 'var(--color-txt3)' }}>
+                          style={{ background: ts ? meta.color : 'var(--color-bg4)' }} />
+                        <p className="text-sm font-semibold" style={{ color: 'var(--color-txt1)' }}>
                           {label}
                         </p>
                         {stagePhotos.length > 0 && (
@@ -410,19 +409,17 @@ export default function FmTicketDetail() {
                       </div>
                       <div className="flex items-center gap-2">
                         {ts && <span className="text-xs" style={{ color: 'var(--color-txt3)' }}>{fmt(ts)}</span>}
-                        {reached && (
-                          <button
-                            onClick={() => openStageUpload(key)}
-                            disabled={isUploading}
-                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50 transition-opacity"
-                            style={{ background: 'var(--color-bg3)', color: 'var(--color-txt2)' }}
-                          >
-                            {isUploading
-                              ? <span className="w-3 h-3 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: 'var(--color-txt2)', borderTopColor: 'transparent' }} />
-                              : <><Camera size={12} /><span>Add Photo</span></>
-                            }
-                          </button>
-                        )}
+                        <button
+                          onClick={() => openStageUpload(key)}
+                          disabled={isUploading}
+                          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50 transition-opacity"
+                          style={{ background: 'var(--color-bg3)', color: 'var(--color-txt2)' }}
+                        >
+                          {isUploading
+                            ? <span className="w-3 h-3 rounded-full border-2 animate-spin" style={{ borderColor: 'var(--color-txt2)', borderTopColor: 'transparent' }} />
+                            : <><Camera size={12} /><span>Add Photo</span></>
+                          }
+                        </button>
                       </div>
                     </div>
 
@@ -442,24 +439,19 @@ export default function FmTicketDetail() {
                             }
                           </a>
                         ))}
-                        {/* Inline add button in grid */}
-                        {reached && (
-                          <button onClick={() => openStageUpload(key)} disabled={isUploading}
-                            className="rounded-xl aspect-square border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-opacity disabled:opacity-50"
-                            style={{ borderColor: 'var(--color-bg4)', color: 'var(--color-txt3)' }}>
-                            <Plus size={16} />
-                          </button>
-                        )}
+                        <button onClick={() => openStageUpload(key)} disabled={isUploading}
+                          className="rounded-xl aspect-square border-2 border-dashed flex items-center justify-center transition-opacity disabled:opacity-50"
+                          style={{ borderColor: 'var(--color-bg4)', color: 'var(--color-txt3)' }}>
+                          <Plus size={16} />
+                        </button>
                       </div>
-                    ) : reached ? (
+                    ) : (
                       <button onClick={() => openStageUpload(key)} disabled={isUploading}
                         className="w-full flex items-center justify-center gap-2 py-4 rounded-xl border-2 border-dashed text-sm transition-opacity disabled:opacity-50"
                         style={{ borderColor: 'var(--color-bg4)', color: 'var(--color-txt3)' }}>
                         <Camera size={16} />
                         Add {label} photos
                       </button>
-                    ) : (
-                      <p className="text-xs py-2" style={{ color: 'var(--color-txt3)' }}>Not yet reached</p>
                     )}
                   </div>
                 </div>
