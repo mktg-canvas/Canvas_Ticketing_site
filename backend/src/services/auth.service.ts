@@ -40,7 +40,7 @@ export async function loginUser(email: string, password: string) {
   const accessToken = signAccessToken(payload)
   const refreshToken = signRefreshToken(payload)
 
-  await redis.set(`${REFRESH_PREFIX}${user.id}`, refreshToken, { ex: 7 * 24 * 60 * 60 })
+  await redis.set(`${REFRESH_PREFIX}${user.id}`, refreshToken, { ex: 30 * 24 * 60 * 60 })
 
   return {
     accessToken,

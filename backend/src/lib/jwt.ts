@@ -9,7 +9,7 @@ export function signAccessToken(payload: JwtPayload): string {
 
 export function signRefreshToken(payload: JwtPayload): string {
   return jwt.sign(payload, process.env.JWT_REFRESH_SECRET!, {
-    expiresIn: '7d',
+    expiresIn: '30d',
   })
 }
 
