@@ -20,11 +20,22 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
 })
 
+function SmartRedirect() {
+  const user = useAuthStore(s => s.user)
+  if (!user) return <Navigate to="/login" replace />
+  if (user.role === 'fm') return <Navigate to="/fm/dashboard" replace />
+  if (user.role === 'super_admin') return <Navigate to="/superadmin/dashboard" replace />
+  return <Navigate to="/login" replace />
+}
+
 function AuthProvider({ children }: { children: React.ReactNode }) {
   const setAuth = useAuthStore(s => s.setAuth)
 
   useEffect(() => {
     const storedRefreshToken = useAuthStore.getState().refreshToken
+    // Best-effort silent refresh on app boot. We don't block UI or log the user
+    // out on failure — the cached accessToken/user from localStorage keeps them
+    // signed in, and the axios interceptor will refresh on the first 401.
     axios.post('/api/auth/refresh', storedRefreshToken ? { refreshToken: storedRefreshToken } : {}, { withCredentials: true })
       .then(({ data }) => {
         if (data.accessToken && data.user) setAuth(data.user, data.accessToken, storedRefreshToken ?? '')
@@ -77,8 +88,8 @@ export default function App() {
                 </ProtectedRoute>
               } />
 
-              <Route path="/" element={<Navigate to="/login" replace />} />
-              <Route path="*" element={<Navigate to="/login" replace />} />
+              <Route path="/" element={<SmartRedirect />} />
+              <Route path="*" element={<SmartRedirect />} />
             </Routes>
           </Suspense>
         </AuthProvider>
