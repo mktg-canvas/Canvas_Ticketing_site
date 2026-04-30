@@ -83,6 +83,22 @@ export function useUpdateStatus() {
   })
 }
 
+export function useUploadAttachment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, file, stage }: { id: string; file: File; stage: string | null }) => {
+      const fd = new FormData()
+      fd.append('file', file)
+      if (stage) fd.append('stage', stage)
+      const { data } = await api.post(`/tickets/${id}/attachments`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      return data.attachment
+    },
+    onSuccess: (_d, { id }) => qc.invalidateQueries({ queryKey: ['ticket', id] }),
+  })
+}
+
 export function useAddComment() {
   const qc = useQueryClient()
   return useMutation({

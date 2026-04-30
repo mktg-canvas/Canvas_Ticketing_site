@@ -87,5 +87,6 @@ export interface Attachment {
   file_url?: string
   file_size?: number
   mime_type?: string
+  stage?: string | null
   created_at: string
 }

@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Building2, Layers, Briefcase, User, Clock, FileText, Image as ImageIcon, CheckCircle, MapPin, Pencil, Trash2, ChevronDown } from 'lucide-react'
-import { useTicket, useUpdateStatus, useEditTicket, useDeleteTicket } from '../../hooks/useTickets'
+import { ArrowLeft, Building2, Layers, Briefcase, User, Clock, FileText, Image as ImageIcon, CheckCircle, MapPin, Pencil, Trash2, ChevronDown, Camera, Plus } from 'lucide-react'
+import { useTicket, useUpdateStatus, useEditTicket, useDeleteTicket, useUploadAttachment } from '../../hooks/useTickets'
 import { useBuildings } from '../../hooks/useBuildings'
 import { useFloors } from '../../hooks/useFloors'
 import { useCompanies } from '../../hooks/useCompanies'
@@ -63,6 +63,9 @@ export default function FmTicketDetail() {
   const { mutateAsync: updateStatus, isPending: updatingStatus } = useUpdateStatus()
   const { mutateAsync: editTicket, isPending: editing } = useEditTicket()
   const { mutateAsync: deleteTicket, isPending: deleting } = useDeleteTicket()
+  const { mutateAsync: uploadAttachment, isPending: uploading } = useUploadAttachment()
+  const stageFileRef = useRef<HTMLInputElement>(null)
+  const [uploadingStage, setUploadingStage] = useState<string | null>(null)
 
   const { data: buildings = [] } = useBuildings()
   const [editBuildingId, setEditBuildingId] = useState('')
@@ -123,6 +126,21 @@ export default function FmTicketDetail() {
   async function handleDelete() {
     await deleteTicket(id!)
     navigate(-1)
+  }
+
+  function openStageUpload(stage: string) {
+    setUploadingStage(stage)
+    stageFileRef.current?.click()
+  }
+
+  async function handleStageFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? [])
+    if (!files.length || !uploadingStage) return
+    for (const file of files) {
+      await uploadAttachment({ id: id!, file, stage: uploadingStage })
+    }
+    e.target.value = ''
+    setUploadingStage(null)
   }
 
   if (isLoading) return (
@@ -320,35 +338,135 @@ export default function FmTicketDetail() {
           </div>
         </div>
 
-        {/* Photos */}
-        {(ticket as any).attachments?.length > 0 && (
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider mb-2.5 px-1" style={{ color: 'var(--color-txt3)' }}>
-              Photos · {(ticket as any).attachments.length}
-            </p>
-            <div className="grid grid-cols-3 gap-2">
-              {(ticket as any).attachments.map((a: any) => (
-                <a
-                  key={a.id}
-                  href={a.file_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="rounded-xl overflow-hidden aspect-square border block transition-opacity hover:opacity-90"
-                  style={{ background: 'var(--color-bg3)', borderColor: 'var(--color-bg4)' }}
-                >
-                  {a.mime_type?.startsWith('image/') ? (
-                    <img src={a.file_url} alt={a.file_name || ''} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center gap-1">
-                      <ImageIcon size={20} style={{ color: 'var(--color-txt3)' }} />
-                      <span className="text-xs" style={{ color: 'var(--color-txt3)' }}>PDF</span>
-                    </div>
-                  )}
-                </a>
-              ))}
+        {/* Hidden file input for stage photo uploads */}
+        <input
+          ref={stageFileRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={handleStageFileChange}
+        />
+
+        {/* Initial Photos (raised with ticket) */}
+        {(() => {
+          const initial = (ticket as any).attachments?.filter((a: any) => !a.stage) ?? []
+          if (!initial.length) return null
+          return (
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider mb-2.5 px-1" style={{ color: 'var(--color-txt3)' }}>
+                Photos · {initial.length}
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {initial.map((a: any) => (
+                  <a key={a.id} href={a.file_url} target="_blank" rel="noreferrer"
+                    className="rounded-xl overflow-hidden aspect-square border block transition-opacity hover:opacity-90"
+                    style={{ background: 'var(--color-bg3)', borderColor: 'var(--color-bg4)' }}>
+                    {a.mime_type?.startsWith('image/')
+                      ? <img src={a.file_url} alt={a.file_name || ''} className="w-full h-full object-cover" />
+                      : <div className="w-full h-full flex flex-col items-center justify-center gap-1">
+                          <ImageIcon size={20} style={{ color: 'var(--color-txt3)' }} />
+                          <span className="text-xs" style={{ color: 'var(--color-txt3)' }}>PDF</span>
+                        </div>
+                    }
+                  </a>
+                ))}
+              </div>
             </div>
+          )
+        })()}
+
+        {/* Progress Photos */}
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider mb-2.5 px-1" style={{ color: 'var(--color-txt3)' }}>
+            Progress Photos
+          </p>
+          <div className="rounded-2xl border overflow-hidden" style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}>
+            {([
+              { key: 'open',        label: 'Opened',      ts: ticket.opened_at,      meta: STATUS_META.open },
+              { key: 'in_progress', label: 'In Progress', ts: ticket.in_progress_at, meta: STATUS_META.in_progress },
+              { key: 'closed',      label: 'Closed',      ts: ticket.closed_at,      meta: STATUS_META.closed },
+            ] as const).map(({ key, label, ts, meta }, i) => {
+              const reached = !!ts
+              const stagePhotos: any[] = (ticket as any).attachments?.filter((a: any) => a.stage === key) ?? []
+              const isUploading = uploading && uploadingStage === key
+              return (
+                <div key={key} className={i > 0 ? 'border-t' : ''} style={{ borderColor: 'var(--color-bg4)' }}>
+                  <div className="px-4 pt-4 pb-3">
+                    {/* Stage header */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0"
+                          style={{ background: reached ? meta.color : 'var(--color-bg4)' }} />
+                        <p className="text-sm font-semibold" style={{ color: reached ? 'var(--color-txt1)' : 'var(--color-txt3)' }}>
+                          {label}
+                        </p>
+                        {stagePhotos.length > 0 && (
+                          <span className="text-xs px-1.5 py-0.5 rounded-md font-semibold"
+                            style={{ background: 'var(--color-bg3)', color: 'var(--color-txt3)' }}>
+                            {stagePhotos.length}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {ts && <span className="text-xs" style={{ color: 'var(--color-txt3)' }}>{fmt(ts)}</span>}
+                        {reached && (
+                          <button
+                            onClick={() => openStageUpload(key)}
+                            disabled={isUploading}
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50 transition-opacity"
+                            style={{ background: 'var(--color-bg3)', color: 'var(--color-txt2)' }}
+                          >
+                            {isUploading
+                              ? <span className="w-3 h-3 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: 'var(--color-txt2)', borderTopColor: 'transparent' }} />
+                              : <><Camera size={12} /><span>Add Photo</span></>
+                            }
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Photos grid */}
+                    {stagePhotos.length > 0 ? (
+                      <div className="grid grid-cols-3 gap-2">
+                        {stagePhotos.map((a: any) => (
+                          <a key={a.id} href={a.file_url} target="_blank" rel="noreferrer"
+                            className="rounded-xl overflow-hidden aspect-square border block transition-opacity hover:opacity-90"
+                            style={{ background: 'var(--color-bg3)', borderColor: 'var(--color-bg4)' }}>
+                            {a.mime_type?.startsWith('image/')
+                              ? <img src={a.file_url} alt={a.file_name || ''} className="w-full h-full object-cover" />
+                              : <div className="w-full h-full flex flex-col items-center justify-center gap-1">
+                                  <ImageIcon size={16} style={{ color: 'var(--color-txt3)' }} />
+                                  <span className="text-xs" style={{ color: 'var(--color-txt3)' }}>File</span>
+                                </div>
+                            }
+                          </a>
+                        ))}
+                        {/* Inline add button in grid */}
+                        {reached && (
+                          <button onClick={() => openStageUpload(key)} disabled={isUploading}
+                            className="rounded-xl aspect-square border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-opacity disabled:opacity-50"
+                            style={{ borderColor: 'var(--color-bg4)', color: 'var(--color-txt3)' }}>
+                            <Plus size={16} />
+                          </button>
+                        )}
+                      </div>
+                    ) : reached ? (
+                      <button onClick={() => openStageUpload(key)} disabled={isUploading}
+                        className="w-full flex items-center justify-center gap-2 py-4 rounded-xl border-2 border-dashed text-sm transition-opacity disabled:opacity-50"
+                        style={{ borderColor: 'var(--color-bg4)', color: 'var(--color-txt3)' }}>
+                        <Camera size={16} />
+                        Add {label} photos
+                      </button>
+                    ) : (
+                      <p className="text-xs py-2" style={{ color: 'var(--color-txt3)' }}>Not yet reached</p>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
           </div>
-        )}
+        </div>
       </div>
 
       {/* ── Status bottom sheet ── */}
