@@ -4,7 +4,7 @@ import * as analyticsService from '../services/analytics.service'
 
 export async function getAnalytics(req: AuthRequest, res: Response): Promise<void> {
   try {
-    const { from, to, buildingId, companyId, categoryId, fmId } = req.query
+    const { from, to, buildingId, companyId, categoryId, fmId, source } = req.query
 
     const filters: analyticsService.AnalyticsFilters = {}
     if (from && typeof from === 'string') filters.from = new Date(from)
@@ -13,6 +13,7 @@ export async function getAnalytics(req: AuthRequest, res: Response): Promise<voi
     if (companyId && typeof companyId === 'string') filters.companyId = companyId
     if (categoryId && typeof categoryId === 'string') filters.categoryId = categoryId
     if (fmId && typeof fmId === 'string') filters.fmId = fmId
+    if (source === 'client' || source === 'fm') filters.source = source
 
     const data = await analyticsService.getAnalytics(filters)
     res.json(data)

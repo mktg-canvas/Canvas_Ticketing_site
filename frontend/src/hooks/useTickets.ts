@@ -47,6 +47,7 @@ export function useEditTicket() {
       categoryId?: string
       subCategory?: string
       description?: string
+      source?: 'client' | 'fm'
     }) => {
       const { data: res } = await api.patch(`/tickets/${id}`, data)
       return res.ticket

@@ -144,6 +144,7 @@ export default function RaiseTicket() {
   const [floorId, setFloorId] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [status, setStatus] = useState<StatusValue>('open')
+  const [source, setSource] = useState<'client' | 'fm'>('client')
   const [subCategory, setSubCategory] = useState('')
   const [description, setDescription] = useState('')
   const [photos, setPhotos] = useState<File[]>([])
@@ -253,6 +254,7 @@ export default function RaiseTicket() {
       fd.append('companyId', companyId)
       fd.append('categoryId', categoryId)
       fd.append('status', status)
+      fd.append('source', source)
       if (subCategory.trim()) fd.append('subCategory', subCategory.trim())
       fd.append('description', description.trim())
       photos.forEach(f => fd.append('files', f))
@@ -325,6 +327,31 @@ export default function RaiseTicket() {
         </SelectField>
 
         <StatusField value={status} onChange={setStatus} />
+
+        {/* Source toggle */}
+        <div className="flex flex-col gap-1.5">
+          <Label text="Ticket Source" />
+          <div className="flex rounded-xl overflow-hidden border" style={{ borderColor: 'var(--color-bg4)' }}>
+            {(['client', 'fm'] as const).map((val) => {
+              const active = source === val
+              const label = val === 'client' ? 'Client Reported' : 'FM Observed'
+              return (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => setSource(val)}
+                  className="flex-1 py-3 text-sm font-semibold transition-colors"
+                  style={{
+                    background: active ? 'var(--color-accent)' : 'var(--color-bg1)',
+                    color: active ? '#fff' : 'var(--color-txt3)',
+                  }}
+                >
+                  {label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
 
         {/* Sub-category */}
         <div className="flex flex-col gap-1.5">

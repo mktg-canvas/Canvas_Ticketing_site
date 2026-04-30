@@ -1,4 +1,4 @@
-import { Prisma, TicketStatus } from '@prisma/client'
+import { Prisma, TicketStatus, TicketSource } from '@prisma/client'
 import { prisma } from '../lib/prisma'
 import { generateTicketNumber } from '../lib/ticketNumber'
 import { uploadFile } from '../lib/supabaseStorage'
@@ -14,6 +14,7 @@ export async function createTicket(
     subCategory?: string
     description?: string
     status?: string
+    source?: string
     files?: Express.Multer.File[]
   }
 ) {
@@ -33,6 +34,7 @@ export async function createTicket(
           sub_category: data.subCategory ?? null,
           description: data.description ?? '',
           status: (data.status as TicketStatus) ?? 'open',
+          source: (data.source as TicketSource) ?? 'client',
           opened_at: (!data.status || data.status === 'open') ? new Date() : undefined,
           in_progress_at: data.status === 'in_progress' ? new Date() : undefined,
           closed_at: data.status === 'closed' ? new Date() : undefined,
@@ -86,6 +88,7 @@ export async function listTickets(
     buildingId?: string
     floorId?: string
     companyId?: string
+    source?: string
     page?: number
   }
 ) {
@@ -104,6 +107,7 @@ export async function listTickets(
   if (filters.buildingId) where.building_id = filters.buildingId
   if (filters.floorId) where.floor_id = filters.floorId
   if (filters.companyId) where.company_id = filters.companyId
+  if (filters.source) where.source = filters.source as TicketSource
 
   const [tickets, total] = await Promise.all([
     prisma.ticket.findMany({
@@ -208,6 +212,7 @@ export async function editTicket(
     categoryId?: string
     subCategory?: string | null
     description?: string
+    source?: string
   }
 ) {
   const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } })
@@ -220,6 +225,7 @@ export async function editTicket(
   if (data.categoryId) updateData.category_id = data.categoryId
   if (data.subCategory !== undefined) updateData.sub_category = data.subCategory || null
   if (data.description !== undefined) updateData.description = data.description
+  if (data.source) updateData.source = data.source
 
   await prisma.ticket.update({ where: { id: ticketId }, data: updateData })
   return getTicketById(ticketId)

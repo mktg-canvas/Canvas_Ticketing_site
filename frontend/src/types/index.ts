@@ -53,6 +53,7 @@ export interface Ticket {
   sub_category?: string
   description: string
   status: 'open' | 'in_progress' | 'closed'
+  source: 'client' | 'fm'
   raised_by: string
   opened_at?: string
   in_progress_at?: string

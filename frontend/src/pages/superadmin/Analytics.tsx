@@ -17,7 +17,7 @@ import { useUsers } from '../../hooks/useUsers'
 import { useAuthStore } from '../../store/authStore'
 
 type DatePreset = '7d' | '30d' | '90d' | 'all' | 'custom'
-type Dimension = 'byBuilding' | 'byCategory' | 'byCompany' | 'byFm' | 'byMonth'
+type Dimension = 'byBuilding' | 'byCategory' | 'byCompany' | 'byFm' | 'byMonth' | 'bySource'
 
 const COLORS = {
   open:    '#ef4444',
@@ -41,6 +41,7 @@ const DIMENSIONS: { value: Dimension; label: string }[] = [
   { value: 'byCompany',  label: 'Company' },
   { value: 'byFm',       label: 'FM' },
   { value: 'byMonth',    label: 'Monthly Trend' },
+  { value: 'bySource',   label: 'Source' },
 ]
 
 function computeRange(preset: DatePreset, customFrom: string, customTo: string): { from?: string; to?: string } {
@@ -163,6 +164,7 @@ export default function Analytics() {
   const [companyId, setCompanyId] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [fmId, setFmId] = useState('')
+  const [source, setSource] = useState<'all' | 'client' | 'fm'>('all')
 
   const dateRange = useMemo(
     () => computeRange(preset, customFrom, customTo),
@@ -174,7 +176,8 @@ export default function Analytics() {
     ...(companyId && { companyId }),
     ...(categoryId && { categoryId }),
     ...(fmId && { fmId }),
-  }), [dateRange, buildingId, companyId, categoryId, fmId])
+    ...(source !== 'all' && { source }),
+  }), [dateRange, buildingId, companyId, categoryId, fmId, source])
   const hasFilter = !!(buildingId || companyId || categoryId || fmId)
 
   const accessToken = useAuthStore(s => s.accessToken)
@@ -218,6 +221,14 @@ export default function Analytics() {
     }))
   }, [data, dimension])
 
+  // Summary cards for Source dimension
+  const sourceRows = useMemo(() => {
+    if (!data?.bySource) return null
+    const client = data.bySource.find(r => r.id === 'client')
+    const fm = data.bySource.find(r => r.id === 'fm')
+    return { client, fm }
+  }, [data])
+
   const dimLabel = DIMENSIONS.find(d => d.value === dimension)?.label ?? ''
   const totalTickets = tableRows.reduce((s, r) => s + r.total, 0)
   const activeDateLabel = preset === 'custom'
@@ -225,7 +236,7 @@ export default function Analytics() {
     : PRESETS.find(p => p.value === preset)?.label
 
   function clearFilters() {
-    setBuildingId(''); setCompanyId(''); setCategoryId(''); setFmId('')
+    setBuildingId(''); setCompanyId(''); setCategoryId(''); setFmId(''); setSource('all')
   }
 
   async function downloadPDF() {
@@ -331,6 +342,38 @@ export default function Analytics() {
                 className="rounded-lg px-3 text-xs outline-none border h-8"
                 style={{ background: 'var(--color-bg2)', borderColor: 'var(--color-bg4)', color: 'var(--color-txt1)' }} />
             </div>
+          )}
+        </div>
+
+        {/* Source toggle */}
+        <div className="rounded-2xl border p-3 flex items-center gap-2 flex-wrap"
+          style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}>
+          <span className="text-xs font-semibold px-1" style={{ color: 'var(--color-txt3)' }}>Source</span>
+          {([
+            { value: 'all',    label: 'All Tickets' },
+            { value: 'client', label: 'Client Reported' },
+            { value: 'fm',     label: 'FM Observed' },
+          ] as const).map(opt => (
+            <button
+              key={opt.value}
+              onClick={() => setSource(opt.value)}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+              style={{
+                background: source === opt.value
+                  ? opt.value === 'client' ? 'var(--color-warning)'
+                  : opt.value === 'fm'     ? 'var(--color-accent)'
+                  :                          'var(--color-accent)'
+                  : 'var(--color-bg3)',
+                color: source === opt.value ? '#fff' : 'var(--color-txt2)',
+              }}
+            >
+              {opt.label}
+            </button>
+          ))}
+          {source !== 'all' && (
+            <span className="ml-auto text-xs" style={{ color: 'var(--color-txt3)' }}>
+              Showing {source === 'client' ? 'client-reported' : 'FM-observed'} tickets only
+            </span>
           )}
         </div>
 
@@ -455,6 +498,24 @@ export default function Analytics() {
                   Clear
                 </button>
               )}
+            </div>
+          )}
+
+          {/* Source summary cards (shown only for Source dimension) */}
+          {dimension === 'bySource' && sourceRows && (
+            <div className="px-4 py-3 border-b grid grid-cols-2 gap-3" style={{ borderColor: 'var(--color-bg4)' }}>
+              {[
+                { key: 'client', label: 'Client Reported', color: 'var(--color-warning)', row: sourceRows.client },
+                { key: 'fm',     label: 'FM Observed',     color: 'var(--color-accent)',  row: sourceRows.fm },
+              ].map(({ label, color, row }) => (
+                <div key={label} className="rounded-xl p-3 border" style={{ background: 'var(--color-bg2)', borderColor: 'var(--color-bg4)' }}>
+                  <p className="text-xs font-semibold mb-1" style={{ color }}>{label}</p>
+                  <p className="text-2xl font-bold" style={{ color: 'var(--color-txt1)' }}>{row?.total ?? 0}</p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--color-txt3)' }}>
+                    {row && data?.summary.total ? Math.round((row.total / data.summary.total) * 100) : 0}% of total
+                  </p>
+                </div>
+              ))}
             </div>
           )}
 
