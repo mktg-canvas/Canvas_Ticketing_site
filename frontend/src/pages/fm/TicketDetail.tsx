@@ -174,42 +174,43 @@ export default function FmTicketDetail() {
     <div className="min-h-screen pb-10" style={{ background: 'var(--color-bg0)' }}>
 
       {/* Header */}
-      <div className="sticky top-0 z-10 px-4 py-3 flex items-center gap-2 border-b" style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}>
-        <button onClick={() => navigate(-1)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg transition-colors hover:bg-[var(--color-bg3)]">
-          <ArrowLeft size={18} style={{ color: 'var(--color-txt2)' }} />
-        </button>
-        <span className="text-xs font-mono font-bold px-2 py-1 rounded-lg truncate max-w-[100px]" style={{ background: 'var(--color-bg3)', color: 'var(--color-txt2)' }}>
-          {ticket.ticket_number}
-        </span>
-        <StatusBadge status={ticket.status} />
-
-        <div className="ml-auto flex items-center gap-2">
-          {isAdmin && (
-            <>
-              <button
-                onClick={openEditSheet}
-                className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg transition-colors hover:bg-[var(--color-bg3)]"
-                title="Edit ticket"
-              >
-                <Pencil size={16} style={{ color: 'var(--color-txt2)' }} />
-              </button>
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg transition-colors"
-                style={{ color: 'var(--color-danger)' }}
-                title="Delete ticket"
-              >
-                <Trash2 size={16} />
-              </button>
-            </>
-          )}
-          <button
-            onClick={() => setShowStatusSheet(true)}
-            className="shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-opacity hover:opacity-90"
-            style={{ background: 'var(--color-accent)', color: '#fff' }}
-          >
-            Update Status
+      <div className="sticky top-0 z-10 border-b" style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}>
+        <div className="px-3 py-2.5 flex items-center gap-2">
+          {/* Back */}
+          <button onClick={() => navigate(-1)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--color-bg3)]">
+            <ArrowLeft size={18} style={{ color: 'var(--color-txt2)' }} />
           </button>
+
+          {/* Ticket number + status — flex-1 so it takes remaining space but doesn't push icons off screen */}
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+            <span className="text-xs font-mono font-bold px-2 py-1 rounded-lg shrink-0"
+              style={{ background: 'var(--color-bg3)', color: 'var(--color-txt2)' }}>
+              {ticket.ticket_number}
+            </span>
+            <StatusBadge status={ticket.status} />
+          </div>
+
+          {/* Right actions — all shrink-0 icons + compact status button */}
+          <div className="flex items-center gap-1 shrink-0">
+            {isAdmin && (
+              <>
+                <button onClick={openEditSheet} title="Edit ticket"
+                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--color-bg3)]">
+                  <Pencil size={15} style={{ color: 'var(--color-txt2)' }} />
+                </button>
+                <button onClick={() => setShowDeleteConfirm(true)} title="Delete ticket"
+                  className="w-8 h-8 flex items-center justify-center rounded-lg"
+                  style={{ color: 'var(--color-danger)' }}>
+                  <Trash2 size={15} />
+                </button>
+              </>
+            )}
+            <button onClick={() => setShowStatusSheet(true)}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold transition-opacity hover:opacity-90 whitespace-nowrap"
+              style={{ background: 'var(--color-accent)', color: '#fff' }}>
+              Status
+            </button>
+          </div>
         </div>
       </div>
 
