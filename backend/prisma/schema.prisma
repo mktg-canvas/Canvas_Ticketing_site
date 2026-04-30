@@ -17,6 +17,11 @@ enum TicketStatus {
   closed
 }
 
+enum TicketSource {
+  client
+  fm
+}
+
 enum ActivityType {
   created
   status_changed
@@ -124,6 +129,7 @@ model Ticket {
   sub_category  String?        @db.VarChar(255)
   description   String
   status        TicketStatus   @default(open)
+  source        TicketSource   @default(client)
   raised_by     String         @db.Uuid
   opened_at     DateTime?      @db.Timestamptz
   in_progress_at DateTime?     @db.Timestamptz

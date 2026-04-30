@@ -9,6 +9,7 @@ export interface AnalyticsFilters {
   companyId?: string
   categoryId?: string
   fmId?: string
+  source?: 'client' | 'fm'
 }
 
 export interface DimRow {
@@ -42,6 +43,7 @@ export interface AnalyticsData {
   byFm: DimRow[]
   byFloor: DimRow[]
   byMonth: MonthRow[]
+  bySource: DimRow[]
 }
 
 export function useAnalytics(filters: AnalyticsFilters) {
@@ -52,6 +54,7 @@ export function useAnalytics(filters: AnalyticsFilters) {
   if (filters.companyId) params.set('companyId', filters.companyId)
   if (filters.categoryId) params.set('categoryId', filters.categoryId)
   if (filters.fmId) params.set('fmId', filters.fmId)
+  if (filters.source) params.set('source', filters.source)
 
   const accessToken = useAuthStore(s => s.accessToken)
 

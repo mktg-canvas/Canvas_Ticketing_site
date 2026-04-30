@@ -76,6 +76,7 @@ export default function FmTicketDetail() {
   const [editForm, setEditForm] = useState({
     buildingId: '', floorId: '', companyId: '',
     categoryId: '', subCategory: '', description: '',
+    source: 'client' as 'client' | 'fm',
   })
 
   function openEditSheet() {
@@ -90,6 +91,7 @@ export default function FmTicketDetail() {
       categoryId: catId,
       subCategory: ticket.sub_category ?? '',
       description: ticket.description ?? '',
+      source: ticket.source ?? 'client',
     })
     setShowEditSheet(true)
   }
@@ -113,6 +115,7 @@ export default function FmTicketDetail() {
       categoryId: editForm.categoryId || undefined,
       subCategory: editForm.subCategory || undefined,
       description: editForm.description,
+      source: editForm.source,
     })
     setShowEditSheet(false)
   }
@@ -209,6 +212,15 @@ export default function FmTicketDetail() {
             </span>
             <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--color-txt3)' }}>
               <Briefcase size={11} /> {ticket.company?.name}
+            </span>
+            <span
+              className="text-xs px-2 py-0.5 rounded-md font-semibold"
+              style={ticket.source === 'fm'
+                ? { background: 'var(--bg-accent-15)', color: 'var(--color-accent)' }
+                : { background: 'var(--bg-warning-15)', color: 'var(--color-warning)' }
+              }
+            >
+              {ticket.source === 'fm' ? 'FM Observed' : 'Client Reported'}
             </span>
             <span className="ml-auto text-xs" style={{ color: 'var(--color-txt3)' }}>
               {fmt(ticket.created_at)}
@@ -488,6 +500,29 @@ export default function FmTicketDetail() {
                   onFocus={e => (e.target.style.borderColor = 'var(--color-accent)')}
                   onBlur={e => (e.target.style.borderColor = 'var(--color-bg4)')}
                 />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold" style={{ color: 'var(--color-txt3)' }}>Ticket Source</label>
+                <div className="flex rounded-xl overflow-hidden border" style={{ borderColor: 'var(--color-bg4)' }}>
+                  {(['client', 'fm'] as const).map(val => {
+                    const active = editForm.source === val
+                    return (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => setEditForm(f => ({ ...f, source: val }))}
+                        className="flex-1 py-3 text-sm font-semibold transition-colors"
+                        style={{
+                          background: active ? 'var(--color-accent)' : 'var(--color-bg2)',
+                          color: active ? '#fff' : 'var(--color-txt3)',
+                        }}
+                      >
+                        {val === 'client' ? 'Client Reported' : 'FM Observed'}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
             </div>
 

@@ -72,7 +72,7 @@ export default function TicketCard({ ticket, linkTo, deleteError }: Props) {
           </p>
         )}
 
-        {/* Company + Building */}
+        {/* Company + Building + Source */}
         <div className="flex items-center gap-2 flex-wrap ml-4" style={{ marginTop: ticket.sub_category ? 0 : 8 }}>
           {ticket.company && (
             <span
@@ -90,6 +90,15 @@ export default function TicketCard({ ticket, linkTo, deleteError }: Props) {
               {ticket.building.name}
             </span>
           )}
+          <span
+            className="text-xs px-2.5 py-1 rounded-lg font-semibold"
+            style={ticket.source === 'fm'
+              ? { background: 'var(--bg-accent-15)', color: 'var(--color-accent)' }
+              : { background: 'var(--bg-warning-15)', color: 'var(--color-warning)' }
+            }
+          >
+            {ticket.source === 'fm' ? 'FM Observed' : 'Client Reported'}
+          </span>
         </div>
 
         {deleteError && (

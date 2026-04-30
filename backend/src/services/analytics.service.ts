@@ -8,6 +8,7 @@ export interface AnalyticsFilters {
   companyId?: string
   categoryId?: string
   fmId?: string
+  source?: 'client' | 'fm'
 }
 
 interface DimRow {
@@ -39,6 +40,7 @@ function buildWhere(f: AnalyticsFilters): Prisma.TicketWhereInput {
   if (f.companyId) w.company_id = f.companyId
   if (f.categoryId) w.category_id = f.categoryId
   if (f.fmId) w.raised_by = f.fmId
+  if (f.source) w.source = f.source
   return w
 }
 
@@ -77,6 +79,7 @@ export async function getAnalytics(filters: AnalyticsFilters) {
   if (filters.companyId) sqlConditions.push(Prisma.sql`company_id = ${filters.companyId}::uuid`)
   if (filters.categoryId) sqlConditions.push(Prisma.sql`category_id = ${filters.categoryId}::uuid`)
   if (filters.fmId) sqlConditions.push(Prisma.sql`raised_by = ${filters.fmId}::uuid`)
+  if (filters.source) sqlConditions.push(Prisma.sql`source = ${filters.source}::"TicketSource"`)
   const whereClause = sqlConditions.length > 0
     ? Prisma.sql`WHERE ${Prisma.join(sqlConditions, ' AND ')}`
     : Prisma.empty
@@ -95,6 +98,7 @@ export async function getAnalytics(filters: AnalyticsFilters) {
     byFm,
     byFloor,
     monthlyRaw,
+    bySourceRaw,
   ] = await Promise.all([
     prisma.ticket.groupBy({ by: ['status'], where, _count: { id: true } }),
     prisma.ticket.findMany({
@@ -118,6 +122,7 @@ export async function getAnalytics(filters: AnalyticsFilters) {
       GROUP BY month, status
       ORDER BY month ASC
     `,
+    prisma.ticket.groupBy({ by: ['source', 'status'] as any, where, _count: { id: true } }),
   ])
 
   // Summary
@@ -164,6 +169,25 @@ export async function getAnalytics(filters: AnalyticsFilters) {
   }
   const byMonth = Array.from(monthMap.values())
 
+  // Source breakdown
+  const sourceMap = new Map<string, { open: number; in_progress: number; closed: number; total: number }>()
+  for (const r of bySourceRaw) {
+    const key = (r as any).source as string
+    if (!sourceMap.has(key)) sourceMap.set(key, { open: 0, in_progress: 0, closed: 0, total: 0 })
+    const entry = sourceMap.get(key)!
+    const status = (r as any).status as string
+    if (status === 'open') entry.open = r._count.id
+    else if (status === 'in_progress') entry.in_progress = r._count.id
+    else if (status === 'closed') entry.closed = r._count.id
+    entry.total += r._count.id
+  }
+  const SOURCE_LABELS: Record<string, string> = { client: 'Client Reported', fm: 'FM Observed' }
+  const bySource: DimRow[] = Array.from(sourceMap.entries()).map(([id, counts]) => ({
+    id,
+    name: SOURCE_LABELS[id] ?? id,
+    ...counts,
+  }))
+
   return {
     summary,
     byBuilding: toDimRows(byBuilding, buildings),
@@ -172,5 +196,6 @@ export async function getAnalytics(filters: AnalyticsFilters) {
     byFm: toDimRows(byFm, fms),
     byFloor: byFloorRows,
     byMonth,
+    bySource,
   }
 }
