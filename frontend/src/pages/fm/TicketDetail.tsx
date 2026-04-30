@@ -174,7 +174,7 @@ export default function FmTicketDetail() {
     <div className="min-h-screen pb-10" style={{ background: 'var(--color-bg0)' }}>
 
       {/* Header */}
-      <div className="sticky top-0 z-10 border-b" style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}>
+      <div className="sticky top-0 z-40 border-b" style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}>
         <div className="px-3 py-2.5 flex items-center gap-2">
           {/* Back */}
           <button onClick={() => navigate(-1)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--color-bg3)]">
@@ -308,7 +308,7 @@ export default function FmTicketDetail() {
                     />
                   )}
                   <div
-                    className="relative z-10 w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5"
+                    className="relative w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5"
                     style={{
                       background: done ? meta.bg : 'var(--color-bg3)',
                       border: `2px solid ${done ? meta.color : 'var(--color-bg4)'}`,
