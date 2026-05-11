@@ -72,6 +72,7 @@ export async function createTicket(
           file_url: url,
           file_size: file.size,
           mime_type: file.mimetype,
+          stage: 'open',
         },
       })
     }
