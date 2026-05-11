@@ -294,33 +294,6 @@ export default function FmTicketDetail() {
         {/* Hidden file input for stage photo uploads */}
         <input ref={stageFileRef} type="file" accept="image/*" multiple className="hidden" onChange={handleStageFileChange} />
 
-        {/* Initial raise photos */}
-        {(() => {
-          const initial = (ticket as any).attachments?.filter((a: any) => !a.stage) ?? []
-          if (!initial.length) return null
-          return (
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider mb-2.5 px-1" style={{ color: 'var(--color-txt3)' }}>
-                Photos · {initial.length}
-              </p>
-              <div className="grid grid-cols-3 gap-2">
-                {initial.map((a: any) => (
-                  <a key={a.id} href={a.file_url} target="_blank" rel="noreferrer"
-                    className="rounded-xl overflow-hidden aspect-square border block transition-opacity hover:opacity-90"
-                    style={{ background: 'var(--color-bg3)', borderColor: 'var(--color-bg4)' }}>
-                    {a.mime_type?.startsWith('image/')
-                      ? <img src={a.file_url} alt={a.file_name || ''} className="w-full h-full object-cover" />
-                      : <div className="w-full h-full flex flex-col items-center justify-center gap-1">
-                          <ImageIcon size={20} style={{ color: 'var(--color-txt3)' }} />
-                          <span className="text-xs" style={{ color: 'var(--color-txt3)' }}>PDF</span>
-                        </div>
-                    }
-                  </a>
-                ))}
-              </div>
-            </div>
-          )
-        })()}
 
         {/* Status Timeline — each step owns its stage photos inline */}
         <div>
@@ -330,7 +303,9 @@ export default function FmTicketDetail() {
               const meta = STATUS_META[step.key]
               const done = i <= currentStepIdx
               const isLast = i === timelineSteps.length - 1
-              const stagePhotos: any[] = (ticket as any).attachments?.filter((a: any) => a.stage === step.key) ?? []
+              const stagePhotos: any[] = (ticket as any).attachments?.filter((a: any) =>
+                a.stage === step.key || (!a.stage && step.key === 'open')
+              ) ?? []
               const isUploading = uploading && uploadingStage === step.key
               return (
                 <div key={step.key} className="relative flex gap-4 px-4 pt-4 pb-4">
