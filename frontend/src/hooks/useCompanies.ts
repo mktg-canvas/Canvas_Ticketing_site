@@ -44,3 +44,24 @@ export function useDeactivateCompany() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['companies'] }),
   })
 }
+
+export function useAddCompanyLocation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ companyId, buildingId, floorId }: { companyId: string; buildingId: string; floorId: string }) => {
+      const { data } = await api.post(`/companies/${companyId}/locations`, { buildingId, floorId })
+      return data.location
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['companies'] }),
+  })
+}
+
+export function useRemoveCompanyLocation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ companyId, locationId }: { companyId: string; locationId: string }) => {
+      await api.delete(`/companies/${companyId}/locations/${locationId}`)
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['companies'] }),
+  })
+}

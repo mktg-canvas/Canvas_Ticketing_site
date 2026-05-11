@@ -4,7 +4,7 @@ import { ArrowLeft, Plus, X, Building2, Layers, Briefcase, UserCheck } from 'luc
 import { isAxiosError } from 'axios'
 import { useBuildings, useCreateBuilding, useUpdateBuilding, useDeactivateBuilding } from '../../hooks/useBuildings'
 import { useFloors, useCreateFloor, useUpdateFloor, useDeactivateFloor } from '../../hooks/useFloors'
-import { useCompanies, useCreateCompany, useUpdateCompany, useDeactivateCompany } from '../../hooks/useCompanies'
+import { useCompanies, useCreateCompany, useUpdateCompany, useDeactivateCompany, useAddCompanyLocation, useRemoveCompanyLocation } from '../../hooks/useCompanies'
 import type { CompanyLocation } from '../../types'
 import { useUsers, useCreateUser, useDeactivateUser, useUpdateUser } from '../../hooks/useUsers'
 
@@ -59,6 +59,8 @@ export default function Accounts() {
   const [selected, setSelected] = useState<any>(null)
   const [form, setForm] = useState<Record<string, string>>({})
   const [error, setError] = useState('')
+  const [pendingLocations, setPendingLocations] = useState<Array<{ buildingId: string; buildingName: string; floorId: string; floorName: string }>>([])
+  const [editLocations, setEditLocations] = useState<CompanyLocation[]>([])
 
   const f = (key: string) => form[key] || ''
   const set = (key: string) => (v: string) => setForm(prev => ({ ...prev, [key]: v }))
@@ -80,6 +82,8 @@ export default function Accounts() {
   const { mutateAsync: createCompany, isPending: creatingCompany } = useCreateCompany()
   const { mutateAsync: updateCompany, isPending: updatingCompany } = useUpdateCompany()
   const { mutateAsync: deactivateCompany } = useDeactivateCompany()
+  const { mutateAsync: addCompanyLocation, isPending: addingLocation } = useAddCompanyLocation()
+  const { mutateAsync: removeCompanyLocation } = useRemoveCompanyLocation()
 
   const { mutateAsync: createUser, isPending: creatingUser } = useCreateUser()
   const { mutateAsync: deactivateUser } = useDeactivateUser()
@@ -87,19 +91,55 @@ export default function Accounts() {
 
   function openModal(type: string, item?: any) {
     setError('')
+    setPendingLocations([])
     setSelected(item || null)
     if (item) {
       if (type === 'editBuilding') setForm({ name: item.name })
       if (type === 'editFloor') setForm({ name: item.name, buildingId: item.building_id })
-      if (type === 'editCompany') setForm({ name: item.name })
+      if (type === 'editCompany') { setForm({ name: item.name }); setEditLocations(item.locations || []) }
       if (type === 'editFm') setForm({ name: item.name })
     } else {
       setForm({})
+      setEditLocations([])
     }
     setShowModal(type)
   }
 
-  function closeModal() { setShowModal(null); setSelected(null); setForm({}); setError('') }
+  function closeModal() { setShowModal(null); setSelected(null); setForm({}); setError(''); setPendingLocations([]); setEditLocations([]) }
+
+  async function handleAddPendingLocation() {
+    const building = buildings.find((b: any) => b.id === f('locBuildingId'))
+    const floor = floors.find((fl: any) => fl.id === f('locFloorId'))
+    if (!building || !floor) return
+    if (pendingLocations.some(l => l.buildingId === f('locBuildingId') && l.floorId === f('locFloorId'))) return
+    setPendingLocations(prev => [...prev, { buildingId: building.id, buildingName: building.name, floorId: floor.id, floorName: floor.name }])
+    setForm(prev => ({ ...prev, locBuildingId: '', locFloorId: '' }))
+  }
+
+  async function handleAddEditLocation() {
+    if (!selected) return
+    setError('')
+    try {
+      const loc = await addCompanyLocation({ companyId: selected.id, buildingId: f('locBuildingId'), floorId: f('locFloorId') })
+      setEditLocations(prev => [...prev, loc])
+      setForm(prev => ({ ...prev, locBuildingId: '', locFloorId: '' }))
+    } catch (e: unknown) {
+      if (isAxiosError(e)) setError(e.response?.data?.error || 'Failed to add location')
+      else setError('Failed to add location')
+    }
+  }
+
+  async function handleRemoveEditLocation(locationId: string) {
+    if (!selected) return
+    setError('')
+    try {
+      await removeCompanyLocation({ companyId: selected.id, locationId })
+      setEditLocations(prev => prev.filter(l => l.id !== locationId))
+    } catch (e: unknown) {
+      if (isAxiosError(e)) setError(e.response?.data?.error || 'Failed to remove location')
+      else setError('Failed to remove location')
+    }
+  }
 
   async function run(fn: () => Promise<void>) {
     setError('')
@@ -317,11 +357,48 @@ export default function Accounts() {
       {showModal === 'addCompany' && (
         <Modal title="Add Company" onClose={closeModal}>
           <Field label="Company Name *" value={f('name')} onChange={set('name')} placeholder="e.g. TechCorp India" />
-          <p className="text-xs mb-3" style={{ color: 'var(--color-txt3)' }}>
-            Building and floor locations are managed via the seed script.
-          </p>
+          <div className="mb-3">
+            <label className="text-xs font-medium block mb-1.5" style={{ color: 'var(--color-txt2)' }}>Locations</label>
+            {pendingLocations.length > 0 && (
+              <div className="flex flex-col gap-1 mb-2">
+                {pendingLocations.map((loc, i) => (
+                  <div key={i} className="flex items-center justify-between px-3 py-1.5 rounded-lg" style={{ background: 'var(--color-bg3)' }}>
+                    <span className="text-xs" style={{ color: 'var(--color-txt2)' }}>{loc.buildingName} · {loc.floorName}</span>
+                    <button onClick={() => setPendingLocations(prev => prev.filter((_, j) => j !== i))}>
+                      <X size={12} style={{ color: 'var(--color-txt3)' }} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-2">
+              <select value={f('locBuildingId')} onChange={e => { set('locBuildingId')(e.target.value); set('locFloorId')('') }}
+                className="flex-1 rounded-lg px-2 py-2 text-sm outline-none border" style={inputStyle}>
+                <option value=''>Building</option>
+                {buildings.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+              <select value={f('locFloorId')} onChange={e => set('locFloorId')(e.target.value)}
+                disabled={!f('locBuildingId')}
+                className="flex-1 rounded-lg px-2 py-2 text-sm outline-none border" style={{ ...inputStyle, opacity: f('locBuildingId') ? 1 : 0.5 }}>
+                <option value=''>Floor</option>
+                {floors.filter((fl: any) => fl.building_id === f('locBuildingId')).map((fl: any) => (
+                  <option key={fl.id} value={fl.id}>{fl.name}</option>
+                ))}
+              </select>
+              <button onClick={handleAddPendingLocation} disabled={!f('locBuildingId') || !f('locFloorId')}
+                className="px-3 py-2 rounded-lg text-sm font-medium disabled:opacity-40 shrink-0"
+                style={{ background: 'var(--color-accent)', color: '#fff' }}>
+                Add
+              </button>
+            </div>
+          </div>
           {error && <p className="text-xs mb-3" style={{ color: 'var(--color-danger)' }}>{error}</p>}
-          <button onClick={() => run(() => createCompany({ name: f('name') }))}
+          <button onClick={() => run(async () => {
+            const company = await createCompany({ name: f('name') })
+            for (const loc of pendingLocations) {
+              await addCompanyLocation({ companyId: company.id, buildingId: loc.buildingId, floorId: loc.floorId })
+            }
+          })}
             disabled={creatingCompany || !f('name')}
             className="w-full py-2.5 rounded-lg text-sm font-semibold disabled:opacity-50"
             style={{ background: 'var(--color-accent)', color: '#fff' }}>
@@ -334,18 +411,41 @@ export default function Accounts() {
       {showModal === 'editCompany' && (
         <Modal title="Edit Company" onClose={closeModal}>
           <Field label="Company Name *" value={f('name')} onChange={set('name')} />
-          {selected?.locations?.length > 0 && (
-            <div className="mb-3">
-              <label className="text-xs font-medium block mb-1" style={{ color: 'var(--color-txt2)' }}>Locations</label>
-              <div className="flex flex-col gap-1">
-                {selected.locations.map((l: CompanyLocation) => (
-                  <p key={l.id} className="text-xs px-3 py-1.5 rounded-lg" style={{ background: 'var(--color-bg3)', color: 'var(--color-txt2)' }}>
-                    {l.building.name} · {l.floor.name}
-                  </p>
+          <div className="mb-3">
+            <label className="text-xs font-medium block mb-1.5" style={{ color: 'var(--color-txt2)' }}>Locations</label>
+            {editLocations.length > 0 && (
+              <div className="flex flex-col gap-1 mb-2">
+                {editLocations.map((l: CompanyLocation) => (
+                  <div key={l.id} className="flex items-center justify-between px-3 py-1.5 rounded-lg" style={{ background: 'var(--color-bg3)' }}>
+                    <span className="text-xs" style={{ color: 'var(--color-txt2)' }}>{l.building.name} · {l.floor.name}</span>
+                    <button onClick={() => handleRemoveEditLocation(l.id)}>
+                      <X size={12} style={{ color: 'var(--color-txt3)' }} />
+                    </button>
+                  </div>
                 ))}
               </div>
+            )}
+            <div className="flex gap-2">
+              <select value={f('locBuildingId')} onChange={e => { set('locBuildingId')(e.target.value); set('locFloorId')('') }}
+                className="flex-1 rounded-lg px-2 py-2 text-sm outline-none border" style={inputStyle}>
+                <option value=''>Building</option>
+                {buildings.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+              <select value={f('locFloorId')} onChange={e => set('locFloorId')(e.target.value)}
+                disabled={!f('locBuildingId')}
+                className="flex-1 rounded-lg px-2 py-2 text-sm outline-none border" style={{ ...inputStyle, opacity: f('locBuildingId') ? 1 : 0.5 }}>
+                <option value=''>Floor</option>
+                {floors.filter((fl: any) => fl.building_id === f('locBuildingId')).map((fl: any) => (
+                  <option key={fl.id} value={fl.id}>{fl.name}</option>
+                ))}
+              </select>
+              <button onClick={handleAddEditLocation} disabled={!f('locBuildingId') || !f('locFloorId') || addingLocation}
+                className="px-3 py-2 rounded-lg text-sm font-medium disabled:opacity-40 shrink-0"
+                style={{ background: 'var(--color-accent)', color: '#fff' }}>
+                Add
+              </button>
             </div>
-          )}
+          </div>
           {error && <p className="text-xs mb-3" style={{ color: 'var(--color-danger)' }}>{error}</p>}
           <button onClick={() => run(() => updateCompany({ id: selected.id, name: f('name') }))}
             disabled={updatingCompany || !f('name')}

@@ -43,3 +43,17 @@ export async function updateCompany(id: string, name: string) {
 export async function deactivateCompany(id: string) {
   return prisma.company.update({ where: { id }, data: { is_active: false } })
 }
+
+export async function addCompanyLocation(companyId: string, buildingId: string, floorId: string) {
+  return prisma.companyLocation.create({
+    data: { company_id: companyId, building_id: buildingId, floor_id: floorId },
+    include: {
+      building: { select: { id: true, name: true } },
+      floor: { select: { id: true, name: true } },
+    },
+  })
+}
+
+export async function removeCompanyLocation(locationId: string) {
+  return prisma.companyLocation.delete({ where: { id: locationId } })
+}
