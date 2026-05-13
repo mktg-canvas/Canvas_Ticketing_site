@@ -6,22 +6,22 @@ import { AuthRequest } from '../types'
 const createSchema = z.object({
   buildingId: z.string().uuid(),
   floorId: z.string().uuid(),
-  companyId: z.string().uuid(),
+  clientId: z.string().uuid(),
   categoryId: z.string().uuid(),
   subCategory: z.string().max(255).optional(),
   description: z.string().optional(),
   status: z.enum(['open', 'in_progress', 'closed']).optional(),
-  source: z.enum(['client', 'fm']).optional(),
+  source: z.enum(['client', 'cem']).optional(),
 })
 
 const editSchema = z.object({
   buildingId:  z.string().uuid().optional(),
   floorId:     z.string().uuid().optional(),
-  companyId:   z.string().uuid().optional(),
+  clientId:    z.string().uuid().optional(),
   categoryId:  z.string().uuid().optional(),
   subCategory: z.string().max(255).nullable().optional(),
   description: z.string().optional(),
-  source:      z.enum(['client', 'fm']).optional(),
+  source:      z.enum(['client', 'cem']).optional(),
 })
 
 const statusSchema = z.object({
@@ -49,13 +49,16 @@ export async function createTicket(req: AuthRequest, res: Response): Promise<voi
 export async function listTickets(req: AuthRequest, res: Response): Promise<void> {
   try {
     const result = await ticketsService.listTickets(req.user!, {
-      status: req.query.status as string,
-      category: req.query.category as string,
+      status:     req.query.status     as string,
+      category:   req.query.category   as string,
       buildingId: req.query.buildingId as string,
-      floorId: req.query.floorId as string,
-      companyId: req.query.companyId as string,
-      source: req.query.source as string,
-      page: req.query.page ? Number(req.query.page) : 1,
+      floorId:    req.query.floorId    as string,
+      clientId:   req.query.clientId   as string,
+      source:     req.query.source     as string,
+      page:       req.query.page ? Number(req.query.page) : 1,
+      from:       req.query.from       as string,
+      to:         req.query.to         as string,
+      noPaginate: req.query.noPaginate === 'true',
     })
     res.json(result)
   } catch (err: any) {

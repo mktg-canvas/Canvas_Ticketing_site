@@ -5,10 +5,10 @@ export interface AnalyticsFilters {
   from?: Date
   to?: Date
   buildingId?: string
-  companyId?: string
+  clientId?: string
   categoryId?: string
-  fmId?: string
-  source?: 'client' | 'fm'
+  cemId?: string
+  source?: 'client' | 'cem'
 }
 
 interface DimRow {
@@ -37,15 +37,15 @@ function buildWhere(f: AnalyticsFilters): Prisma.TicketWhereInput {
     }
   }
   if (f.buildingId) w.building_id = f.buildingId
-  if (f.companyId) w.company_id = f.companyId
+  if (f.clientId) w.client_id = f.clientId
   if (f.categoryId) w.category_id = f.categoryId
-  if (f.fmId) w.raised_by = f.fmId
+  if (f.cemId) w.raised_by = f.cemId
   if (f.source) w.source = f.source
   return w
 }
 
 async function groupByField(
-  field: 'building_id' | 'category_id' | 'company_id' | 'raised_by' | 'floor_id',
+  field: 'building_id' | 'category_id' | 'client_id' | 'raised_by' | 'floor_id',
   where: Prisma.TicketWhereInput
 ): Promise<Map<string, { open: number; in_progress: number; closed: number; total: number }>> {
   const rows = await prisma.ticket.groupBy({
@@ -76,9 +76,9 @@ export async function getAnalytics(filters: AnalyticsFilters) {
   if (filters.from) sqlConditions.push(Prisma.sql`created_at >= ${filters.from}`)
   if (filters.to) sqlConditions.push(Prisma.sql`created_at <= ${filters.to}`)
   if (filters.buildingId) sqlConditions.push(Prisma.sql`building_id = ${filters.buildingId}::uuid`)
-  if (filters.companyId) sqlConditions.push(Prisma.sql`company_id = ${filters.companyId}::uuid`)
+  if (filters.clientId) sqlConditions.push(Prisma.sql`client_id = ${filters.clientId}::uuid`)
   if (filters.categoryId) sqlConditions.push(Prisma.sql`category_id = ${filters.categoryId}::uuid`)
-  if (filters.fmId) sqlConditions.push(Prisma.sql`raised_by = ${filters.fmId}::uuid`)
+  if (filters.cemId) sqlConditions.push(Prisma.sql`raised_by = ${filters.cemId}::uuid`)
   if (filters.source) sqlConditions.push(Prisma.sql`source = ${filters.source}::"TicketSource"`)
   const whereClause = sqlConditions.length > 0
     ? Prisma.sql`WHERE ${Prisma.join(sqlConditions, ' AND ')}`
@@ -89,13 +89,13 @@ export async function getAnalytics(filters: AnalyticsFilters) {
     closedWithTimes,
     buildings,
     categories,
-    companies,
-    fms,
+    clients,
+    cems,
     floors,
     byBuilding,
     byCategory,
-    byCompany,
-    byFm,
+    byClient,
+    byCem,
     byFloor,
     monthlyRaw,
     bySourceRaw,
@@ -107,12 +107,12 @@ export async function getAnalytics(filters: AnalyticsFilters) {
     }),
     prisma.building.findMany({ select: { id: true, name: true } }),
     prisma.category.findMany({ select: { id: true, name: true } }),
-    prisma.company.findMany({ select: { id: true, name: true } }),
-    prisma.user.findMany({ where: { role: 'fm' }, select: { id: true, name: true } }),
+    prisma.client.findMany({ select: { id: true, name: true } }),
+    prisma.user.findMany({ where: { role: 'cem' }, select: { id: true, name: true } }),
     prisma.floor.findMany({ include: { building: { select: { name: true } } } }),
     groupByField('building_id', where),
     groupByField('category_id', where),
-    groupByField('company_id', where),
+    groupByField('client_id', where),
     groupByField('raised_by', where),
     groupByField('floor_id', where),
     prisma.$queryRaw<Array<{ month: Date; status: string; count: number }>>`
@@ -181,7 +181,7 @@ export async function getAnalytics(filters: AnalyticsFilters) {
     else if (status === 'closed') entry.closed = r._count.id
     entry.total += r._count.id
   }
-  const SOURCE_LABELS: Record<string, string> = { client: 'Client Reported', fm: 'FM Observed' }
+  const SOURCE_LABELS: Record<string, string> = { client: 'Client Reported', cem: 'CEM Observed' }
   const bySource: DimRow[] = Array.from(sourceMap.entries()).map(([id, counts]) => ({
     id,
     name: SOURCE_LABELS[id] ?? id,
@@ -192,8 +192,8 @@ export async function getAnalytics(filters: AnalyticsFilters) {
     summary,
     byBuilding: toDimRows(byBuilding, buildings),
     byCategory: toDimRows(byCategory, categories),
-    byCompany: toDimRows(byCompany, companies),
-    byFm: toDimRows(byFm, fms),
+    byClient: toDimRows(byClient, clients),
+    byCem: toDimRows(byCem, cems),
     byFloor: byFloorRows,
     byMonth,
     bySource,

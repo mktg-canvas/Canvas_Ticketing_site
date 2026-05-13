@@ -288,7 +288,7 @@ export function AnalyticsReportPDF({
 
         {/* Footer */}
         <View style={S.footer} fixed>
-          <Text style={S.footerText}>Canvas Facility Management  ·  Confidential</Text>
+          <Text style={S.footerText}>Canvas Workspace  ·  Confidential</Text>
           <Text style={S.footerText} render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`} />
         </View>
 

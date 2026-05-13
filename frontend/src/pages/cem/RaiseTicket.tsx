@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Camera, X, ChevronDown } from 'lucide-react'
 import { isAxiosError } from 'axios'
-import { useCompanies } from '../../hooks/useCompanies'
+import { useClients } from '../../hooks/useClients'
 import { useBuildings } from '../../hooks/useBuildings'
 import { useFloors } from '../../hooks/useFloors'
 import { useCategories } from '../../hooks/useCategories'
@@ -139,74 +139,74 @@ export default function RaiseTicket() {
   const [error, setError] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const [companyId, setCompanyId] = useState('')
+  const [clientId, setClientId] = useState('')
   const [buildingId, setBuildingId] = useState('')
   const [floorId, setFloorId] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [status, setStatus] = useState<StatusValue>('open')
-  const [source, setSource] = useState<'client' | 'fm'>('client')
+  const [source, setSource] = useState<'client' | 'cem'>('client')
   const [subCategory, setSubCategory] = useState('')
   const [description, setDescription] = useState('')
   const [photos, setPhotos] = useState<File[]>([])
 
   const { data: categories = [] } = useCategories()
-  const { data: rawCompanies = [] } = useCompanies()
+  const { data: rawClients = [] } = useClients()
   const { data: allBuildings = [] } = useBuildings()
   // Only fetch floors when in "Others" mode and a building is selected
   const { data: rawOthersFloors = [] } = useFloors(buildingId || undefined, !!(buildingId))
 
   // "Others" goes to the bottom of the list
-  const companies = useMemo(() => {
-    const others = (rawCompanies as any[]).filter((c: any) => c.name === 'Others')
-    const rest = (rawCompanies as any[]).filter((c: any) => c.name !== 'Others')
+  const clients = useMemo(() => {
+    const others = (rawClients as any[]).filter((c: any) => c.name === 'Others')
+    const rest = (rawClients as any[]).filter((c: any) => c.name !== 'Others')
     return [...rest, ...others]
-  }, [rawCompanies])
+  }, [rawClients])
 
-  const selectedCompany = useMemo(
-    () => companies.find((c: any) => c.id === companyId) ?? null,
-    [companies, companyId]
+  const selectedClient = useMemo(
+    () => clients.find((c: any) => c.id === clientId) ?? null,
+    [clients, clientId]
   )
 
-  // Unique buildings for the selected company (from its locations)
-  const companyBuildings = useMemo(() => {
-    const locs: any[] = selectedCompany?.locations ?? []
+  // Unique buildings for the selected client (from its locations)
+  const clientBuildings = useMemo(() => {
+    const locs: any[] = selectedClient?.locations ?? []
     if (!locs.length) return []
     const seen = new Set<string>()
     return locs
       .filter(l => { if (seen.has(l.building_id)) return false; seen.add(l.building_id); return true })
       .map(l => l.building)
       .sort((a: any, b: any) => a.name.localeCompare(b.name))
-  }, [selectedCompany])
+  }, [selectedClient])
 
-  // Floors for the selected company + building (from its locations)
-  const companyFloors = useMemo(() => {
-    const locs: any[] = selectedCompany?.locations ?? []
+  // Floors for the selected client + building (from its locations)
+  const clientFloors = useMemo(() => {
+    const locs: any[] = selectedClient?.locations ?? []
     if (!locs.length || !buildingId) return []
     return sortByFloorOrder(
       locs.filter(l => l.building_id === buildingId).map(l => l.floor)
     )
-  }, [selectedCompany, buildingId])
+  }, [selectedClient, buildingId])
 
-  // "Others" mode: company has no location mapping → free building+floor selection
-  const isOthersMode = !!(companyId && companyBuildings.length === 0)
+  // "Others" mode: client has no location mapping → free building+floor selection
+  const isOthersMode = !!(clientId && clientBuildings.length === 0)
 
-  const buildingAutoFilled = !isOthersMode && companyBuildings.length === 1
-  const floorAutoFilled = !isOthersMode && companyFloors.length === 1
+  const buildingAutoFilled = !isOthersMode && clientBuildings.length === 1
+  const floorAutoFilled = !isOthersMode && clientFloors.length === 1
 
   // Options to render
-  const buildingOptions = isOthersMode ? allBuildings : companyBuildings
+  const buildingOptions = isOthersMode ? allBuildings : clientBuildings
   const floorOptions = isOthersMode
     ? sortByFloorOrder(rawOthersFloors as any[])
-    : companyFloors
+    : clientFloors
 
-  function handleCompanyChange(id: string) {
-    setCompanyId(id)
+  function handleClientChange(id: string) {
+    setClientId(id)
     setBuildingId('')
     setFloorId('')
 
-    const company = companies.find((c: any) => c.id === id)
-    const locs: any[] = company?.locations ?? []
-    if (!locs.length) return // Others or unlinked company → user picks manually
+    const client = clients.find((c: any) => c.id === id)
+    const locs: any[] = client?.locations ?? []
+    if (!locs.length) return // Others or unlinked client → user picks manually
 
     const uniqueBuildings = [...new Set(locs.map(l => l.building_id))]
     if (uniqueBuildings.length === 1) {
@@ -225,7 +225,7 @@ export default function RaiseTicket() {
 
     if (isOthersMode) return // in Others mode, user picks floor manually
 
-    const locs: any[] = selectedCompany?.locations ?? []
+    const locs: any[] = selectedClient?.locations ?? []
     const floorsInBuilding = locs.filter(l => l.building_id === id)
     if (floorsInBuilding.length === 1) {
       setFloorId(floorsInBuilding[0].floor_id)
@@ -242,7 +242,7 @@ export default function RaiseTicket() {
     setPhotos(prev => prev.filter((_, idx) => idx !== i))
   }
 
-  const canSubmit = buildingId && floorId && companyId && categoryId
+  const canSubmit = buildingId && floorId && clientId && categoryId
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -251,7 +251,7 @@ export default function RaiseTicket() {
       const fd = new FormData()
       fd.append('buildingId', buildingId)
       fd.append('floorId', floorId)
-      fd.append('companyId', companyId)
+      fd.append('clientId', clientId)
       fd.append('categoryId', categoryId)
       fd.append('status', status)
       fd.append('source', source)
@@ -260,7 +260,7 @@ export default function RaiseTicket() {
       photos.forEach(f => fd.append('files', f))
 
       const ticket = await createTicket(fd)
-      navigate(role === 'super_admin' ? `/superadmin/tickets/${ticket.id}` : `/fm/tickets/${ticket.id}`)
+      navigate(role === 'super_admin' ? `/superadmin/tickets/${ticket.id}` : `/cem/tickets/${ticket.id}`)
     } catch (err: unknown) {
       if (isAxiosError(err)) {
         const e = err.response?.data?.error
@@ -284,9 +284,9 @@ export default function RaiseTicket() {
 
       <form onSubmit={handleSubmit} className="p-4 max-w-lg mx-auto flex flex-col gap-5">
 
-        {/* 1. Company — drives building + floor */}
-        <SelectField label="Company" required value={companyId} onChange={handleCompanyChange} placeholder="Select company">
-          {companies.map((c: any) => (
+        {/* 1. Client — drives building + floor */}
+        <SelectField label="Client" required value={clientId} onChange={handleClientChange} placeholder="Select client">
+          {clients.map((c: any) => (
             <option key={c.id} value={c.id}
               style={c.name === 'Others' ? { fontStyle: 'italic' } : undefined}>
               {c.name}
@@ -294,13 +294,13 @@ export default function RaiseTicket() {
           ))}
         </SelectField>
 
-        {/* 2. Building — auto-filled for single-location companies; free pick for Others */}
+        {/* 2. Building — auto-filled for single-location clients; free pick for Others */}
         <SelectField
           label="Building" required
-          disabled={!companyId || buildingAutoFilled}
+          disabled={!clientId || buildingAutoFilled}
           value={buildingId}
           onChange={handleBuildingChange}
-          placeholder={companyId ? 'Select building' : 'Select company first'}
+          placeholder={clientId ? 'Select building' : 'Select client first'}
           hint={buildingAutoFilled && buildingId ? '(auto-filled)' : undefined}
         >
           {(buildingOptions as any[]).map((b: any) => (
@@ -308,7 +308,7 @@ export default function RaiseTicket() {
           ))}
         </SelectField>
 
-        {/* 3. Floor — auto-filled for single-floor companies; free pick for Others */}
+        {/* 3. Floor — auto-filled for single-floor clients; free pick for Others */}
         <SelectField
           label="Floor" required
           disabled={!buildingId || floorAutoFilled}
@@ -332,9 +332,9 @@ export default function RaiseTicket() {
         <div className="flex flex-col gap-1.5">
           <Label text="Ticket Source" />
           <div className="flex rounded-xl overflow-hidden border" style={{ borderColor: 'var(--color-bg4)' }}>
-            {(['client', 'fm'] as const).map((val) => {
+            {(['client', 'cem'] as const).map((val) => {
               const active = source === val
-              const label = val === 'client' ? 'Client Reported' : 'FM Observed'
+              const label = val === 'client' ? 'Client Reported' : 'CEM Observed'
               return (
                 <button
                   key={val}

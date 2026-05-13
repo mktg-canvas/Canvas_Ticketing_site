@@ -5,7 +5,7 @@ import { useAuthStore } from '../../store/authStore'
 import ProfileMenu from '../../components/shared/ProfileMenu'
 import KanbanBoard from '../../components/shared/KanbanBoard'
 
-export default function FmDashboard() {
+export default function CemDashboard() {
   const navigate = useNavigate()
   const user = useAuthStore(s => s.user)
   const { data, isLoading } = useTickets()
@@ -33,7 +33,7 @@ export default function FmDashboard() {
           <img src="/logo.png" alt="Canvas" className="h-7 sm:h-8 w-auto object-contain shrink-0" />
           <div className="hidden sm:block w-px h-6" style={{ background: 'var(--color-bg4)' }} />
           <div className="hidden sm:block min-w-0">
-            <p className="text-sm font-bold leading-tight truncate" style={{ color: 'var(--color-txt1)' }}>Facility Manager</p>
+            <p className="text-sm font-bold leading-tight truncate" style={{ color: 'var(--color-txt1)' }}>CEM</p>
             <p className="text-[11px] truncate" style={{ color: 'var(--color-txt3)' }}>{user?.name}</p>
           </div>
         </div>
@@ -41,7 +41,7 @@ export default function FmDashboard() {
         <div className="flex items-center gap-1.5 sm:gap-2">
           <button
             aria-label="Raise ticket"
-            onClick={() => navigate('/fm/raise-ticket')}
+            onClick={() => navigate('/cem/raise-ticket')}
             className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-full text-xs font-semibold"
             style={{ background: 'var(--color-accent)', color: '#fff' }}
           >
@@ -61,7 +61,7 @@ export default function FmDashboard() {
         inProgress={inProgress}
         closed={closed}
         isLoading={isLoading}
-        linkPrefix="/fm/tickets"
+        linkPrefix="/cem/tickets"
       />
     </div>
   )

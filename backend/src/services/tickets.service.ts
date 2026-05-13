@@ -1,6 +1,5 @@
 import { Prisma, TicketStatus, TicketSource } from '@prisma/client'
 import { prisma } from '../lib/prisma'
-import { generateTicketNumber } from '../lib/ticketNumber'
 import { uploadFile } from '../lib/supabaseStorage'
 import { JwtPayload } from '../types'
 
@@ -9,7 +8,7 @@ export async function createTicket(
   data: {
     buildingId: string
     floorId: string
-    companyId: string
+    clientId: string
     categoryId: string
     subCategory?: string
     description?: string
@@ -18,39 +17,23 @@ export async function createTicket(
     files?: Express.Multer.File[]
   }
 ) {
-  let createdTicket: Awaited<ReturnType<typeof prisma.ticket.create>> | null = null
-
-  // Retry on unique constraint collision (concurrent creates can race on ticket_number)
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const ticketNumber = await generateTicketNumber()
-    try {
-      createdTicket = await prisma.ticket.create({
-        data: {
-          ticket_number: ticketNumber,
-          building_id: data.buildingId,
-          floor_id: data.floorId,
-          company_id: data.companyId,
-          category_id: data.categoryId,
-          sub_category: data.subCategory ?? null,
-          description: data.description ?? '',
-          status: (data.status as TicketStatus) ?? 'open',
-          source: (data.source as TicketSource) ?? 'client',
-          opened_at: (!data.status || data.status === 'open') ? new Date() : undefined,
-          in_progress_at: data.status === 'in_progress' ? new Date() : undefined,
-          closed_at: data.status === 'closed' ? new Date() : undefined,
-          raised_by: actor.userId,
-        },
-      })
-      break
-    } catch (err) {
-      const isUniqueViolation = (err as any)?.code === 'P2002'
-      console.log(`[createTicket] attempt=${attempt} isUniqueViolation=${isUniqueViolation}`, (err as any)?.code)
-      if (isUniqueViolation && attempt < 4) continue
-      throw err
-    }
-  }
-
-  if (!createdTicket) throw { status: 500, message: 'Failed to generate a unique ticket number' }
+  // ticket_number is assigned by the DB sequence — no application-level generation needed
+  const createdTicket = await prisma.ticket.create({
+    data: {
+      building_id: data.buildingId,
+      floor_id: data.floorId,
+      client_id: data.clientId,
+      category_id: data.categoryId,
+      sub_category: data.subCategory ?? null,
+      description: data.description ?? '',
+      status: (data.status as TicketStatus) ?? 'open',
+      source: (data.source as TicketSource) ?? 'client',
+      opened_at: (!data.status || data.status === 'open') ? new Date() : undefined,
+      in_progress_at: data.status === 'in_progress' ? new Date() : undefined,
+      closed_at: data.status === 'closed' ? new Date() : undefined,
+      raised_by: actor.userId,
+    },
+  })
 
   await prisma.ticketActivity.create({
     data: {
@@ -88,9 +71,12 @@ export async function listTickets(
     category?: string
     buildingId?: string
     floorId?: string
-    companyId?: string
+    clientId?: string
     source?: string
     page?: number
+    from?: string
+    to?: string
+    noPaginate?: boolean
   }
 ) {
   const page = filters.page || 1
@@ -99,7 +85,7 @@ export async function listTickets(
 
   const where: Prisma.TicketWhereInput = {}
 
-  if (actor.role === 'fm') {
+  if (actor.role === 'cem') {
     where.raised_by = actor.userId
   }
 
@@ -107,24 +93,36 @@ export async function listTickets(
   if (filters.category) where.category_id = filters.category
   if (filters.buildingId) where.building_id = filters.buildingId
   if (filters.floorId) where.floor_id = filters.floorId
-  if (filters.companyId) where.company_id = filters.companyId
+  if (filters.clientId) where.client_id = filters.clientId
   if (filters.source) where.source = filters.source as TicketSource
 
+  if (filters.from || filters.to) {
+    where.created_at = {
+      ...(filters.from ? { gte: new Date(filters.from) } : {}),
+      ...(filters.to   ? { lte: new Date(filters.to)   } : {}),
+    }
+  }
+
+  const findArgs: Prisma.TicketFindManyArgs = {
+    where,
+    include: {
+      raiser: { select: { name: true } },
+      building: { select: { name: true } },
+      floor: { select: { name: true } },
+      client: { select: { name: true } },
+      category: { select: { id: true, name: true, slug: true } },
+      _count: { select: { attachments: true } },
+    },
+    orderBy: { created_at: 'desc' },
+  }
+
+  if (!filters.noPaginate) {
+    findArgs.take = take
+    findArgs.skip = skip
+  }
+
   const [tickets, total] = await Promise.all([
-    prisma.ticket.findMany({
-      where,
-      include: {
-        raiser: { select: { name: true } },
-        building: { select: { name: true } },
-        floor: { select: { name: true } },
-        company: { select: { name: true } },
-        category: { select: { id: true, name: true, slug: true } },
-        _count: { select: { attachments: true } },
-      },
-      orderBy: { created_at: 'desc' },
-      take,
-      skip,
-    }),
+    prisma.ticket.findMany(findArgs),
     prisma.ticket.count({ where }),
   ])
 
@@ -138,7 +136,7 @@ export async function getTicketById(id: string) {
       raiser: { select: { name: true, email: true } },
       building: { select: { name: true } },
       floor: { select: { name: true } },
-      company: { select: { name: true } },
+      client: { select: { name: true } },
       category: { select: { id: true, name: true, slug: true } },
       attachments: true,
       activities: {
@@ -209,7 +207,7 @@ export async function editTicket(
   data: {
     buildingId?: string
     floorId?: string
-    companyId?: string
+    clientId?: string
     categoryId?: string
     subCategory?: string | null
     description?: string
@@ -222,7 +220,7 @@ export async function editTicket(
   const updateData: Record<string, unknown> = {}
   if (data.buildingId) updateData.building_id = data.buildingId
   if (data.floorId) updateData.floor_id = data.floorId
-  if (data.companyId) updateData.company_id = data.companyId
+  if (data.clientId) updateData.client_id = data.clientId
   if (data.categoryId) updateData.category_id = data.categoryId
   if (data.subCategory !== undefined) updateData.sub_category = data.subCategory || null
   if (data.description !== undefined) updateData.description = data.description
