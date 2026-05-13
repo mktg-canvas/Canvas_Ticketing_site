@@ -14,7 +14,8 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
         <div style={{ padding: 32, fontFamily: 'monospace', background: '#fff', minHeight: '100vh' }}>
           <h2 style={{ color: '#ef4444', marginBottom: 12 }}>Something went wrong</h2>
           <pre style={{ whiteSpace: 'pre-wrap', color: '#111', fontSize: 13 }}>
-            {err.message}{'\n\n'}{err.stack}
+            {err.message}
+            {import.meta.env.DEV && `\n\n${err.stack}`}
           </pre>
           <button onClick={() => { localStorage.clear(); window.location.href = '/login' }}
             style={{ marginTop: 20, padding: '8px 16px', background: '#6366f1', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>
@@ -23,7 +24,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
         </div>
       )
     }
-    return this.state.error ? null : this.props.children
+    return this.props.children
   }
 }
 
