@@ -11,7 +11,7 @@
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
-    "db:seed-locations": "ts-node src/seedLocations.ts",
+    "db:seed-locations": "ts-node src/seedClientLocations.ts",
     "db:add-extra-floors": "ts-node src/addExtraFloors.ts",
     "db:rename-buildings": "ts-node src/renameBuildings.ts"
   },

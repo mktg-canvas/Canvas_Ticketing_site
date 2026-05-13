@@ -6,15 +6,15 @@ import Login from './pages/auth/Login'
 import ProtectedRoute from './components/shared/ProtectedRoute'
 import { useAuthStore } from './store/authStore'
 
-const FmDashboard           = lazy(() => import('./pages/fm/Dashboard'))
-const RaiseTicket           = lazy(() => import('./pages/fm/RaiseTicket'))
-const AllTickets            = lazy(() => import('./pages/fm/AllTickets'))
-const FmTicketDetail        = lazy(() => import('./pages/fm/TicketDetail'))
+const CemDashboard          = lazy(() => import('./pages/cem/Dashboard'))
+const RaiseTicket           = lazy(() => import('./pages/cem/RaiseTicket'))
+const AllTickets            = lazy(() => import('./pages/cem/AllTickets'))
+const CemTicketDetail       = lazy(() => import('./pages/cem/TicketDetail'))
 const SuperAdminDashboard   = lazy(() => import('./pages/superadmin/Dashboard'))
 const SuperAdminAllTickets  = lazy(() => import('./pages/superadmin/AllTickets'))
 const Accounts              = lazy(() => import('./pages/superadmin/Accounts'))
 const Analytics             = lazy(() => import('./pages/superadmin/Analytics'))
-const RaiseTicketAdmin      = lazy(() => import('./pages/fm/RaiseTicket'))
+const RaiseTicketAdmin      = lazy(() => import('./pages/cem/RaiseTicket'))
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
@@ -23,8 +23,8 @@ const queryClient = new QueryClient({
 function SmartRedirect() {
   const user = useAuthStore(s => s.user)
   if (!user) return <Navigate to="/login" replace />
-  if (user.role === 'fm') return <Navigate to="/fm/dashboard" replace />
-  if (user.role === 'super_admin') return <Navigate to="/superadmin/dashboard" replace />
+  if (user.role === 'cem') return <Navigate to="/cem/dashboard" replace />
+  if (user.role === 'super_admin') return <Navigate to="/superadmin/analytics" replace />
   return <Navigate to="/login" replace />
 }
 
@@ -55,6 +55,12 @@ function PageFallback() {
   )
 }
 
+// Legacy /fm/* paths redirect to /cem/* — old bookmarks keep working.
+function FmLegacyRedirect() {
+  const path = typeof window !== 'undefined' ? window.location.pathname.replace(/^\/fm/, '/cem') : '/cem'
+  return <Navigate to={path} replace />
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -64,23 +70,26 @@ export default function App() {
             <Routes>
               <Route path="/login" element={<Login />} />
 
-              <Route path="/fm/*" element={
-                <ProtectedRoute allowedRoles={['fm']}>
+              <Route path="/cem/*" element={
+                <ProtectedRoute allowedRoles={['cem']}>
                   <Routes>
-                    <Route path="dashboard" element={<FmDashboard />} />
+                    <Route path="dashboard" element={<CemDashboard />} />
                     <Route path="raise-ticket" element={<RaiseTicket />} />
                     <Route path="tickets" element={<AllTickets />} />
-                    <Route path="tickets/:id" element={<FmTicketDetail />} />
+                    <Route path="tickets/:id" element={<CemTicketDetail />} />
                   </Routes>
                 </ProtectedRoute>
               } />
+
+              {/* Backwards-compat: forward any /fm/* path to its /cem/* equivalent */}
+              <Route path="/fm/*" element={<FmLegacyRedirect />} />
 
               <Route path="/superadmin/*" element={
                 <ProtectedRoute allowedRoles={['super_admin']}>
                   <Routes>
                     <Route path="dashboard" element={<SuperAdminDashboard />} />
                     <Route path="tickets" element={<SuperAdminAllTickets />} />
-                    <Route path="tickets/:id" element={<FmTicketDetail />} />
+                    <Route path="tickets/:id" element={<CemTicketDetail />} />
                     <Route path="accounts" element={<Accounts />} />
                     <Route path="analytics" element={<Analytics />} />
                     <Route path="raise-ticket" element={<RaiseTicketAdmin />} />

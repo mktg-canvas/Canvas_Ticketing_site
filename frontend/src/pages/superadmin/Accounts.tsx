@@ -1,18 +1,19 @@
 import { useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, Plus, X, Building2, Layers, Briefcase, UserCheck } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
+import { Plus, X, Building2, Layers, Briefcase, UserCheck } from 'lucide-react'
+import SuperAdminNav from '../../components/shared/SuperAdminNav'
 import { isAxiosError } from 'axios'
 import { useBuildings, useCreateBuilding, useUpdateBuilding, useDeactivateBuilding } from '../../hooks/useBuildings'
 import { useFloors, useCreateFloor, useUpdateFloor, useDeactivateFloor } from '../../hooks/useFloors'
-import { useCompanies, useCreateCompany, useUpdateCompany, useDeactivateCompany, useAddCompanyLocation, useRemoveCompanyLocation } from '../../hooks/useCompanies'
-import type { CompanyLocation } from '../../types'
+import { useClients, useCreateClient, useUpdateClient, useDeactivateClient, useAddClientLocation, useRemoveClientLocation } from '../../hooks/useClients'
+import type { ClientLocation } from '../../types'
 import { useUsers, useCreateUser, useDeactivateUser, useUpdateUser } from '../../hooks/useUsers'
 
 const TABS = [
   { key: 'buildings', label: 'Buildings', icon: Building2 },
   { key: 'floors', label: 'Floors', icon: Layers },
-  { key: 'companies', label: 'Companies', icon: Briefcase },
-  { key: 'fms', label: 'FMs', icon: UserCheck },
+  { key: 'clients', label: 'Clients', icon: Briefcase },
+  { key: 'cems', label: 'CEMs', icon: UserCheck },
 ]
 
 const inputCls = 'w-full rounded-lg px-3 py-2.5 text-base outline-none border'
@@ -52,7 +53,6 @@ function Field({ label, value, onChange, type = 'text', placeholder = '', readOn
 }
 
 export default function Accounts() {
-  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [tab, setTab] = useState(searchParams.get('tab') || 'buildings')
   const [showModal, setShowModal] = useState<string | null>(null)
@@ -60,16 +60,16 @@ export default function Accounts() {
   const [form, setForm] = useState<Record<string, string>>({})
   const [error, setError] = useState('')
   const [pendingLocations, setPendingLocations] = useState<Array<{ buildingId: string; buildingName: string; floorId: string; floorName: string }>>([])
-  const [editLocations, setEditLocations] = useState<CompanyLocation[]>([])
+  const [editLocations, setEditLocations] = useState<ClientLocation[]>([])
 
   const f = (key: string) => form[key] || ''
   const set = (key: string) => (v: string) => setForm(prev => ({ ...prev, [key]: v }))
 
   const { data: buildings = [] } = useBuildings()
   const { data: floors = [] } = useFloors()
-  const { data: companies = [] } = useCompanies()
+  const { data: clients = [] } = useClients()
   const { data: users = [] } = useUsers()
-  const fms = users.filter((u: any) => u.role === 'fm')
+  const cems = users.filter((u: any) => u.role === 'cem')
 
   const { mutateAsync: createBuilding, isPending: creatingBuilding } = useCreateBuilding()
   const { mutateAsync: updateBuilding, isPending: updatingBuilding } = useUpdateBuilding()
@@ -79,11 +79,11 @@ export default function Accounts() {
   const { mutateAsync: updateFloor, isPending: updatingFloor } = useUpdateFloor()
   const { mutateAsync: deactivateFloor } = useDeactivateFloor()
 
-  const { mutateAsync: createCompany, isPending: creatingCompany } = useCreateCompany()
-  const { mutateAsync: updateCompany, isPending: updatingCompany } = useUpdateCompany()
-  const { mutateAsync: deactivateCompany } = useDeactivateCompany()
-  const { mutateAsync: addCompanyLocation, isPending: addingLocation } = useAddCompanyLocation()
-  const { mutateAsync: removeCompanyLocation } = useRemoveCompanyLocation()
+  const { mutateAsync: createClient, isPending: creatingClient } = useCreateClient()
+  const { mutateAsync: updateClient, isPending: updatingClient } = useUpdateClient()
+  const { mutateAsync: deactivateClient } = useDeactivateClient()
+  const { mutateAsync: addClientLocation, isPending: addingLocation } = useAddClientLocation()
+  const { mutateAsync: removeClientLocation } = useRemoveClientLocation()
 
   const { mutateAsync: createUser, isPending: creatingUser } = useCreateUser()
   const { mutateAsync: deactivateUser } = useDeactivateUser()
@@ -96,8 +96,8 @@ export default function Accounts() {
     if (item) {
       if (type === 'editBuilding') setForm({ name: item.name })
       if (type === 'editFloor') setForm({ name: item.name, buildingId: item.building_id })
-      if (type === 'editCompany') { setForm({ name: item.name }); setEditLocations(item.locations || []) }
-      if (type === 'editFm') setForm({ name: item.name })
+      if (type === 'editClient') { setForm({ name: item.name }); setEditLocations(item.locations || []) }
+      if (type === 'editCem') setForm({ name: item.name })
     } else {
       setForm({})
       setEditLocations([])
@@ -120,7 +120,7 @@ export default function Accounts() {
     if (!selected) return
     setError('')
     try {
-      const loc = await addCompanyLocation({ companyId: selected.id, buildingId: f('locBuildingId'), floorId: f('locFloorId') })
+      const loc = await addClientLocation({ clientId: selected.id, buildingId: f('locBuildingId'), floorId: f('locFloorId') })
       setEditLocations(prev => [...prev, loc])
       setForm(prev => ({ ...prev, locBuildingId: '', locFloorId: '' }))
     } catch (e: unknown) {
@@ -133,7 +133,7 @@ export default function Accounts() {
     if (!selected) return
     setError('')
     try {
-      await removeCompanyLocation({ companyId: selected.id, locationId })
+      await removeClientLocation({ clientId: selected.id, locationId })
       setEditLocations(prev => prev.filter(l => l.id !== locationId))
     } catch (e: unknown) {
       if (isAxiosError(e)) setError(e.response?.data?.error || 'Failed to remove location')
@@ -152,17 +152,15 @@ export default function Accounts() {
     }
   }
 
-  const addLabel = tab === 'buildings' ? 'Building' : tab === 'floors' ? 'Floor' : tab === 'companies' ? 'Company' : 'FM'
-  const addModalKey = tab === 'buildings' ? 'addBuilding' : tab === 'floors' ? 'addFloor' : tab === 'companies' ? 'addCompany' : 'addFm'
+  const addLabel = tab === 'buildings' ? 'Building' : tab === 'floors' ? 'Floor' : tab === 'clients' ? 'Client' : 'CEM'
+  const addModalKey = tab === 'buildings' ? 'addBuilding' : tab === 'floors' ? 'addFloor' : tab === 'clients' ? 'addClient' : 'addCem'
 
   return (
     <div className="min-h-screen pb-8" style={{ background: 'var(--color-bg0)' }}>
-      {/* Header */}
-      <div className="sticky top-0 z-10 px-4 py-3 border-b flex items-center justify-between" style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}>
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/superadmin/dashboard')}><ArrowLeft size={20} style={{ color: 'var(--color-txt2)' }} /></button>
-          <h1 className="text-sm font-semibold" style={{ color: 'var(--color-txt1)' }}>Account Management</h1>
-        </div>
+      <SuperAdminNav />
+
+      {/* Add button row */}
+      <div className="px-4 pb-3 max-w-2xl mx-auto flex justify-end">
         <button onClick={() => openModal(addModalKey)}
           className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium"
           style={{ background: 'var(--color-accent)', color: '#fff' }}>
@@ -170,7 +168,7 @@ export default function Accounts() {
         </button>
       </div>
 
-      <div className="p-4 max-w-2xl mx-auto">
+      <div className="p-4 pt-0 max-w-2xl mx-auto">
         {/* Tabs */}
         <div className="grid grid-cols-4 gap-1 mb-5 p-1 rounded-xl" style={{ background: 'var(--color-bg1)' }}>
           {TABS.map(({ key, label, icon: Icon }) => (
@@ -229,12 +227,12 @@ export default function Accounts() {
           </div>
         )}
 
-        {/* Companies */}
-        {tab === 'companies' && (
+        {/* Clients */}
+        {tab === 'clients' && (
           <div className="flex flex-col gap-3">
-            {companies.length === 0 ? (
-              <p className="text-center py-10 text-sm" style={{ color: 'var(--color-txt3)' }}>No companies yet.</p>
-            ) : companies.map((c: any) => (
+            {clients.length === 0 ? (
+              <p className="text-center py-10 text-sm" style={{ color: 'var(--color-txt3)' }}>No clients yet.</p>
+            ) : clients.map((c: any) => (
               <div key={c.id} className="rounded-xl p-4 border flex items-center justify-between" style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}>
                 <div>
                   <p className="text-sm font-semibold" style={{ color: 'var(--color-txt1)' }}>{c.name}</p>
@@ -244,7 +242,7 @@ export default function Accounts() {
                       : c.locations?.length === 1
                         ? `${c.locations[0].building.name} · ${c.locations[0].floor.name}`
                         : (() => {
-                            const uniqueBuildings = [...new Set(c.locations.map((l: CompanyLocation) => l.building_id))]
+                            const uniqueBuildings = [...new Set(c.locations.map((l: ClientLocation) => l.building_id))]
                             return uniqueBuildings.length > 1
                               ? `${uniqueBuildings.length} buildings · ${c.locations.length} floors`
                               : `${c.locations[0].building.name} · ${c.locations.length} floors`
@@ -253,9 +251,9 @@ export default function Accounts() {
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => openModal('editCompany', c)}
+                  <button onClick={() => openModal('editClient', c)}
                     className="text-xs px-3 py-1.5 rounded-lg" style={{ background: 'var(--color-bg3)', color: 'var(--color-accent)' }}>Edit</button>
-                  <button onClick={() => { if (confirm(`Deactivate ${c.name}?`)) deactivateCompany(c.id) }}
+                  <button onClick={() => { if (confirm(`Deactivate ${c.name}?`)) deactivateClient(c.id) }}
                     className="text-xs px-3 py-1.5 rounded-lg" style={{ background: 'var(--bg-danger-10)', color: 'var(--color-danger)' }}>Remove</button>
                 </div>
               </div>
@@ -263,12 +261,12 @@ export default function Accounts() {
           </div>
         )}
 
-        {/* FMs */}
-        {tab === 'fms' && (
+        {/* CEMs */}
+        {tab === 'cems' && (
           <div className="flex flex-col gap-3">
-            {fms.length === 0 ? (
-              <p className="text-center py-10 text-sm" style={{ color: 'var(--color-txt3)' }}>No FM accounts yet.</p>
-            ) : fms.map((u: any) => (
+            {cems.length === 0 ? (
+              <p className="text-center py-10 text-sm" style={{ color: 'var(--color-txt3)' }}>No CEM accounts yet.</p>
+            ) : cems.map((u: any) => (
               <div key={u.id} className="rounded-xl p-4 border flex items-center justify-between" style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}>
                 <div>
                   <p className="text-sm font-semibold" style={{ color: 'var(--color-txt1)' }}>{u.name}</p>
@@ -278,7 +276,7 @@ export default function Accounts() {
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => openModal('editFm', u)}
+                  <button onClick={() => openModal('editCem', u)}
                     className="text-xs px-3 py-1.5 rounded-lg" style={{ background: 'var(--color-bg3)', color: 'var(--color-accent)' }}>Edit</button>
                   <button onClick={() => { if (confirm(`Deactivate ${u.name}?`)) deactivateUser(u.id) }}
                     className="text-xs px-3 py-1.5 rounded-lg" style={{ background: 'var(--bg-danger-10)', color: 'var(--color-danger)' }}>Remove</button>
@@ -353,10 +351,10 @@ export default function Accounts() {
         </Modal>
       )}
 
-      {/* Add Company */}
-      {showModal === 'addCompany' && (
-        <Modal title="Add Company" onClose={closeModal}>
-          <Field label="Company Name *" value={f('name')} onChange={set('name')} placeholder="e.g. TechCorp India" />
+      {/* Add Client */}
+      {showModal === 'addClient' && (
+        <Modal title="Add Client" onClose={closeModal}>
+          <Field label="Client Name *" value={f('name')} onChange={set('name')} placeholder="e.g. TechCorp India" />
           <div className="mb-3">
             <label className="text-xs font-medium block mb-1.5" style={{ color: 'var(--color-txt2)' }}>Locations</label>
             {pendingLocations.length > 0 && (
@@ -394,28 +392,28 @@ export default function Accounts() {
           </div>
           {error && <p className="text-xs mb-3" style={{ color: 'var(--color-danger)' }}>{error}</p>}
           <button onClick={() => run(async () => {
-            const company = await createCompany({ name: f('name') })
+            const client = await createClient({ name: f('name') })
             for (const loc of pendingLocations) {
-              await addCompanyLocation({ companyId: company.id, buildingId: loc.buildingId, floorId: loc.floorId })
+              await addClientLocation({ clientId: client.id, buildingId: loc.buildingId, floorId: loc.floorId })
             }
           })}
-            disabled={creatingCompany || !f('name')}
+            disabled={creatingClient || !f('name')}
             className="w-full py-2.5 rounded-lg text-sm font-semibold disabled:opacity-50"
             style={{ background: 'var(--color-accent)', color: '#fff' }}>
-            {creatingCompany ? 'Creating...' : 'Create Company'}
+            {creatingClient ? 'Creating...' : 'Create Client'}
           </button>
         </Modal>
       )}
 
-      {/* Edit Company */}
-      {showModal === 'editCompany' && (
-        <Modal title="Edit Company" onClose={closeModal}>
-          <Field label="Company Name *" value={f('name')} onChange={set('name')} />
+      {/* Edit Client */}
+      {showModal === 'editClient' && (
+        <Modal title="Edit Client" onClose={closeModal}>
+          <Field label="Client Name *" value={f('name')} onChange={set('name')} />
           <div className="mb-3">
             <label className="text-xs font-medium block mb-1.5" style={{ color: 'var(--color-txt2)' }}>Locations</label>
             {editLocations.length > 0 && (
               <div className="flex flex-col gap-1 mb-2">
-                {editLocations.map((l: CompanyLocation) => (
+                {editLocations.map((l: ClientLocation) => (
                   <div key={l.id} className="flex items-center justify-between px-3 py-1.5 rounded-lg" style={{ background: 'var(--color-bg3)' }}>
                     <span className="text-xs" style={{ color: 'var(--color-txt2)' }}>{l.building.name} · {l.floor.name}</span>
                     <button onClick={() => handleRemoveEditLocation(l.id)}>
@@ -447,34 +445,34 @@ export default function Accounts() {
             </div>
           </div>
           {error && <p className="text-xs mb-3" style={{ color: 'var(--color-danger)' }}>{error}</p>}
-          <button onClick={() => run(() => updateCompany({ id: selected.id, name: f('name') }))}
-            disabled={updatingCompany || !f('name')}
+          <button onClick={() => run(() => updateClient({ id: selected.id, name: f('name') }))}
+            disabled={updatingClient || !f('name')}
             className="w-full py-2.5 rounded-lg text-sm font-semibold disabled:opacity-50"
             style={{ background: 'var(--color-accent)', color: '#fff' }}>
-            {updatingCompany ? 'Saving...' : 'Save Changes'}
+            {updatingClient ? 'Saving...' : 'Save Changes'}
           </button>
         </Modal>
       )}
 
-      {/* Add FM */}
-      {showModal === 'addFm' && (
-        <Modal title="Add Facility Manager" onClose={closeModal}>
+      {/* Add CEM */}
+      {showModal === 'addCem' && (
+        <Modal title="Add CEM" onClose={closeModal}>
           <Field label="Full Name *" value={f('name')} onChange={set('name')} />
           <Field label="Email *" value={f('email')} onChange={set('email')} type="email" />
           <Field label="Temporary Password *" value={f('password')} onChange={set('password')} type="password" />
           {error && <p className="text-xs mb-3" style={{ color: 'var(--color-danger)' }}>{error}</p>}
-          <button onClick={() => run(() => createUser({ name: f('name'), email: f('email'), password: f('password'), role: 'fm' }))}
+          <button onClick={() => run(() => createUser({ name: f('name'), email: f('email'), password: f('password'), role: 'cem' }))}
             disabled={creatingUser || !f('name') || !f('email') || !f('password')}
             className="w-full py-2.5 rounded-lg text-sm font-semibold disabled:opacity-50"
             style={{ background: 'var(--color-accent)', color: '#fff' }}>
-            {creatingUser ? 'Creating...' : 'Create FM'}
+            {creatingUser ? 'Creating...' : 'Create CEM'}
           </button>
         </Modal>
       )}
 
-      {/* Edit FM */}
-      {showModal === 'editFm' && (
-        <Modal title="Edit FM" onClose={closeModal}>
+      {/* Edit CEM */}
+      {showModal === 'editCem' && (
+        <Modal title="Edit CEM" onClose={closeModal}>
           <Field label="Full Name *" value={f('name')} onChange={set('name')} />
           <Field label="Email" value={selected?.email || ''} onChange={() => {}} readOnly />
           {error && <p className="text-xs mb-3" style={{ color: 'var(--color-danger)' }}>{error}</p>}

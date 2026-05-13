@@ -26,18 +26,18 @@ async function main() {
     }
   }
 
-  // Add "Others" company (no locations — triggers free building+floor selection in UI)
-  const existing = await prisma.company.findFirst({ where: { name: 'Others' } })
+  // Add "Others" client (no locations — triggers free building+floor selection in UI)
+  const existing = await prisma.client.findFirst({ where: { name: 'Others' } })
   if (existing) {
     if (!existing.is_active) {
-      await prisma.company.update({ where: { id: existing.id }, data: { is_active: true } })
-      console.log('\nReactivated company: Others')
+      await prisma.client.update({ where: { id: existing.id }, data: { is_active: true } })
+      console.log('\nReactivated client: Others')
     } else {
-      console.log('\nCompany "Others" already exists and is active')
+      console.log('\nClient "Others" already exists and is active')
     }
   } else {
-    await prisma.company.create({ data: { name: 'Others' } })
-    console.log('\nCreated company: Others')
+    await prisma.client.create({ data: { name: 'Others' } })
+    console.log('\nCreated client: Others')
   }
 
   console.log('\nDone!')

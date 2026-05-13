@@ -1,4 +1,4 @@
-export type Role = 'fm' | 'super_admin'
+export type Role = 'cem' | 'super_admin'
 
 export interface User {
   id: string
@@ -25,35 +25,35 @@ export interface Floor {
   _count?: { tickets: number }
 }
 
-export interface CompanyLocation {
+export interface ClientLocation {
   id: string
-  company_id: string
+  client_id: string
   building_id: string
   floor_id: string
   building: { id: string; name: string }
   floor: { id: string; name: string }
 }
 
-export interface Company {
+export interface Client {
   id: string
   name: string
   is_active: boolean
   created_at: string
-  locations: CompanyLocation[]
+  locations: ClientLocation[]
   _count?: { tickets: number }
 }
 
 export interface Ticket {
   id: string
-  ticket_number: string
+  ticket_number: number
   building_id: string
   floor_id: string
-  company_id: string
+  client_id: string
   category: { id: string; name: string; slug: string } | string
   sub_category?: string
   description: string
   status: 'open' | 'in_progress' | 'closed'
-  source: 'client' | 'fm'
+  source: 'client' | 'cem'
   raised_by: string
   opened_at?: string
   in_progress_at?: string
@@ -62,7 +62,7 @@ export interface Ticket {
   updated_at: string
   building?: { name: string }
   floor?: { name: string }
-  company?: { name: string }
+  client?: { name: string }
   raiser?: { name: string; email: string }
   _count?: { attachments: number }
 }

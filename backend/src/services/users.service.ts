@@ -9,7 +9,7 @@ export async function listUsers() {
   })
 }
 
-export async function createUser(data: { name: string; email: string; password: string; role: 'fm' | 'super_admin' }) {
+export async function createUser(data: { name: string; email: string; password: string; role: 'cem' | 'super_admin' }) {
   const existing = await prisma.user.findUnique({ where: { email: data.email } })
   const hash = await bcrypt.hash(data.password, 12)
 
