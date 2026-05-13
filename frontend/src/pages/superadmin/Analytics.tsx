@@ -742,7 +742,7 @@ export default function Analytics() {
                 </LineChart>
               </ResponsiveContainer>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 px-2 pb-3">
+              <div className="flex flex-col gap-4 px-2 pb-3">
                 {([
                   {
                     title: 'By Source',
