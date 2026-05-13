@@ -103,7 +103,7 @@ interface Props {
 }
 
 export default function KanbanBoard({ linkPrefix }: Props) {
-  const [period, setPeriod] = useState<Period>('7d')
+  const [period, setPeriod] = useState<Period>('30d')
   const [customFrom, setCustomFrom] = useState(todayStr())
   const [customTo, setCustomTo] = useState(todayStr())
   const [activeTab, setActiveTab] = useState<'open' | 'in_progress' | 'closed'>('open')
@@ -113,7 +113,7 @@ export default function KanbanBoard({ linkPrefix }: Props) {
     [period, customFrom, customTo]
   )
 
-  const { data, isLoading } = useTickets(params as any)
+  const { data, isLoading } = useTickets(params)
   const allTickets: any[] = data?.tickets || []
 
   const buckets: Record<string, any[]> = {

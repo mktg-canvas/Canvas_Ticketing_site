@@ -116,7 +116,9 @@ export async function listTickets(
     orderBy: { created_at: 'desc' },
   }
 
-  if (!filters.noPaginate) {
+  if (filters.noPaginate) {
+    findArgs.take = 2000
+  } else {
     findArgs.take = take
     findArgs.skip = skip
   }

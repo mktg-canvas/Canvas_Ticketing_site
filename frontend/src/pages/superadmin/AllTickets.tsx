@@ -66,7 +66,7 @@ export default function SuperAdminAllTickets() {
     ...(status !== 'all' && { status }),
     ...(buildingId && { buildingId }),
     ...(clientId && { clientId }),
-  } as any)
+  })
 
   const { data: buildings = [] } = useBuildings()
   const { data: clients = [] }   = useClients()

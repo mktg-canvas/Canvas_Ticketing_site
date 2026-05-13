@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../lib/axios'
 
-export function useTickets(filters: Record<string, string | number | undefined> = {}) {
+export function useTickets(filters: Record<string, string | number | boolean | undefined> = {}) {
   return useQuery({
     queryKey: ['tickets', filters],
     queryFn: async () => {
