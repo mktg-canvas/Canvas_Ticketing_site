@@ -1,6 +1,5 @@
 import { useNavigate } from 'react-router-dom'
 import { Plus } from 'lucide-react'
-import { useTickets } from '../../hooks/useTickets'
 import { useAuthStore } from '../../store/authStore'
 import ProfileMenu from '../../components/shared/ProfileMenu'
 import KanbanBoard from '../../components/shared/KanbanBoard'
@@ -8,12 +7,6 @@ import KanbanBoard from '../../components/shared/KanbanBoard'
 export default function CemDashboard() {
   const navigate = useNavigate()
   const user = useAuthStore(s => s.user)
-  const { data, isLoading } = useTickets()
-  const tickets = data?.tickets || []
-
-  const open       = tickets.filter((t: any) => t.status === 'open')
-  const inProgress = tickets.filter((t: any) => t.status === 'in_progress')
-  const closed     = tickets.filter((t: any) => t.status === 'closed')
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--color-bg0)' }}>
@@ -56,13 +49,7 @@ export default function CemDashboard() {
       {/* Spacer */}
       <div className="h-16 sm:h-20" aria-hidden />
 
-      <KanbanBoard
-        open={open}
-        inProgress={inProgress}
-        closed={closed}
-        isLoading={isLoading}
-        linkPrefix="/cem/tickets"
-      />
+      <KanbanBoard linkPrefix="/cem/tickets" />
     </div>
   )
 }
