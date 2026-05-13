@@ -21,6 +21,12 @@ export interface DimRow {
   total: number
   client_total: number
   cem_total: number
+  open_client: number
+  in_progress_client: number
+  closed_client: number
+  open_cem: number
+  in_progress_cem: number
+  closed_cem: number
 }
 
 export interface MonthRow {
@@ -31,6 +37,12 @@ export interface MonthRow {
   total: number
   client_total: number
   cem_total: number
+  open_client: number
+  in_progress_client: number
+  closed_client: number
+  open_cem: number
+  in_progress_cem: number
+  closed_cem: number
 }
 
 export interface AnalyticsData {
