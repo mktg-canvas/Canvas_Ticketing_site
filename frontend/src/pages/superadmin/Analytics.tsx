@@ -134,6 +134,18 @@ function FilterSelect({ value, onChange, placeholder, children }: FilterSelectPr
   )
 }
 
+function groupBarLabel(name: string, color: string) {
+  return ({ x, y, width }: any) => {
+    if (!width || Number(width) < 8) return <g />
+    return (
+      <text x={Number(x) + Number(width) / 2} y={Number(y) - 4}
+        textAnchor="middle" fontSize={9} fontWeight={700} fill={color}>
+        {name}
+      </text>
+    )
+  }
+}
+
 const ChartTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null
   const total = payload.reduce((s: number, p: any) => s + (p.value || 0), 0)
@@ -667,7 +679,7 @@ export default function Analytics() {
             ) : chartType === 'bar' ? (
               <>
                 <ResponsiveContainer width="100%" height={isMobile ? 240 : 320}>
-                  <BarChart data={chartData} margin={{ top: 4, right: 16, left: -8, bottom: 0 }}
+                  <BarChart data={chartData} margin={{ top: 22, right: 16, left: -8, bottom: 0 }}
                     barCategoryGap="28%" barSize={isMobile ? 14 : 18}>
                     <CartesianGrid strokeDasharray="3 3" stroke={COLORS.gridLn} vertical={false} />
                     <XAxis
@@ -700,36 +712,31 @@ export default function Analytics() {
                       </>
                     ) : (
                       <>
-                        {/* Total group — full opacity */}
-                        <Bar dataKey="total_open"   stackId="total"  fill={COLORS.open}   fillOpacity={1}    radius={[0, 0, 0, 0]} name="Open"        />
-                        <Bar dataKey="total_inprog" stackId="total"  fill={COLORS.inProg} fillOpacity={1}    radius={[0, 0, 0, 0]} name="In Progress" />
-                        <Bar dataKey="total_closed" stackId="total"  fill={COLORS.closed} fillOpacity={1}    radius={[4, 4, 0, 0]} name="Closed"       />
-                        {/* Client Reported group — medium opacity */}
-                        <Bar dataKey="client_open"   stackId="client" fill={COLORS.open}   fillOpacity={0.65} radius={[0, 0, 0, 0]} name="Open"        legendType="none" />
-                        <Bar dataKey="client_inprog" stackId="client" fill={COLORS.inProg} fillOpacity={0.65} radius={[0, 0, 0, 0]} name="In Progress" legendType="none" />
-                        <Bar dataKey="client_closed" stackId="client" fill={COLORS.closed} fillOpacity={0.65} radius={[4, 4, 0, 0]} name="Closed"       legendType="none" />
-                        {/* CEM Observed group — lower opacity */}
-                        <Bar dataKey="cem_open"   stackId="cem" fill={COLORS.open}   fillOpacity={0.4} radius={[0, 0, 0, 0]} name="Open"        legendType="none" />
-                        <Bar dataKey="cem_inprog" stackId="cem" fill={COLORS.inProg} fillOpacity={0.4} radius={[0, 0, 0, 0]} name="In Progress" legendType="none" />
-                        <Bar dataKey="cem_closed" stackId="cem" fill={COLORS.closed} fillOpacity={0.4} radius={[4, 4, 0, 0]} name="Closed"       legendType="none" />
+                        {/* Total group */}
+                        <Bar dataKey="total_open"   stackId="total"  fill={COLORS.open}   radius={[0, 0, 0, 0]} name="Open"        />
+                        <Bar dataKey="total_inprog" stackId="total"  fill={COLORS.inProg} radius={[0, 0, 0, 0]} name="In Progress" />
+                        <Bar dataKey="total_closed" stackId="total"  fill={COLORS.closed} radius={[4, 4, 0, 0]} name="Closed"       label={groupBarLabel('Total', COLORS.total)} />
+                        {/* Client Reported group */}
+                        <Bar dataKey="client_open"   stackId="client" fill={COLORS.open}   radius={[0, 0, 0, 0]} name="Open"        legendType="none" />
+                        <Bar dataKey="client_inprog" stackId="client" fill={COLORS.inProg} radius={[0, 0, 0, 0]} name="In Progress" legendType="none" />
+                        <Bar dataKey="client_closed" stackId="client" fill={COLORS.closed} radius={[4, 4, 0, 0]} name="Closed"       legendType="none" label={groupBarLabel('Client', COLORS.client)} />
+                        {/* CEM Observed group */}
+                        <Bar dataKey="cem_open"   stackId="cem" fill={COLORS.open}   radius={[0, 0, 0, 0]} name="Open"        legendType="none" />
+                        <Bar dataKey="cem_inprog" stackId="cem" fill={COLORS.inProg} radius={[0, 0, 0, 0]} name="In Progress" legendType="none" />
+                        <Bar dataKey="cem_closed" stackId="cem" fill={COLORS.closed} radius={[4, 4, 0, 0]} name="Closed"       legendType="none" label={groupBarLabel('CEM', COLORS.cem)} />
                       </>
                     )}
                   </BarChart>
                 </ResponsiveContainer>
                 {/* Group key */}
                 {dimension !== 'bySource' && (
-                  <div className="flex justify-center gap-5 pb-2 pt-1 text-xs flex-wrap"
-                    style={{ color: 'var(--color-txt3)' }}>
+                  <div className="flex justify-center gap-5 pb-2 pt-0 text-xs flex-wrap">
                     {[
-                      { label: 'Total',           opacity: 1 },
-                      { label: 'Client Reported', opacity: 0.65 },
-                      { label: 'CEM Observed',    opacity: 0.4 },
+                      { label: 'Total',           color: COLORS.total },
+                      { label: 'Client Reported', color: COLORS.client },
+                      { label: 'CEM Observed',    color: COLORS.cem },
                     ].map(g => (
-                      <span key={g.label} className="flex items-center gap-1.5">
-                        <span className="inline-block w-2.5 h-3 rounded-sm"
-                          style={{ background: COLORS.closed, opacity: g.opacity }} />
-                        {g.label}
-                      </span>
+                      <span key={g.label} className="font-semibold" style={{ color: g.color }}>{g.label}</span>
                     ))}
                   </div>
                 )}
