@@ -18,6 +18,8 @@ interface DimRow {
   in_progress: number
   closed: number
   total: number
+  client_total: number
+  cem_total: number
 }
 
 interface MonthRow {
@@ -26,6 +28,8 @@ interface MonthRow {
   in_progress: number
   closed: number
   total: number
+  client_total: number
+  cem_total: number
 }
 
 function buildWhere(f: AnalyticsFilters): Prisma.TicketWhereInput {
@@ -47,23 +51,26 @@ function buildWhere(f: AnalyticsFilters): Prisma.TicketWhereInput {
 async function groupByField(
   field: 'building_id' | 'category_id' | 'client_id' | 'raised_by' | 'floor_id',
   where: Prisma.TicketWhereInput
-): Promise<Map<string, { open: number; in_progress: number; closed: number; total: number }>> {
+): Promise<Map<string, { open: number; in_progress: number; closed: number; total: number; client_total: number; cem_total: number }>> {
   const rows = await prisma.ticket.groupBy({
-    by: [field, 'status'] as any,
+    by: [field, 'status', 'source'] as any,
     where,
     _count: { id: true },
   })
 
-  const map = new Map<string, { open: number; in_progress: number; closed: number; total: number }>()
+  const map = new Map<string, { open: number; in_progress: number; closed: number; total: number; client_total: number; cem_total: number }>()
   for (const r of rows) {
     const key = (r as any)[field] as string
-    if (!map.has(key)) map.set(key, { open: 0, in_progress: 0, closed: 0, total: 0 })
+    if (!map.has(key)) map.set(key, { open: 0, in_progress: 0, closed: 0, total: 0, client_total: 0, cem_total: 0 })
     const entry = map.get(key)!
     const status = (r as any).status as string
-    if (status === 'open') entry.open = r._count.id
-    else if (status === 'in_progress') entry.in_progress = r._count.id
-    else if (status === 'closed') entry.closed = r._count.id
+    const source = (r as any).source as string
+    if (status === 'open') entry.open += r._count.id
+    else if (status === 'in_progress') entry.in_progress += r._count.id
+    else if (status === 'closed') entry.closed += r._count.id
     entry.total += r._count.id
+    if (source === 'client') entry.client_total += r._count.id
+    else if (source === 'cem') entry.cem_total += r._count.id
   }
   return map
 }
@@ -115,11 +122,11 @@ export async function getAnalytics(filters: AnalyticsFilters) {
     groupByField('client_id', where),
     groupByField('raised_by', where),
     groupByField('floor_id', where),
-    prisma.$queryRaw<Array<{ month: Date; status: string; count: number }>>`
-      SELECT DATE_TRUNC('month', created_at) AS month, status, COUNT(*)::int AS count
+    prisma.$queryRaw<Array<{ month: Date; status: string; source: string; count: number }>>`
+      SELECT DATE_TRUNC('month', created_at) AS month, status, source, COUNT(*)::int AS count
       FROM tickets
       ${whereClause}
-      GROUP BY month, status
+      GROUP BY month, status, source
       ORDER BY month ASC
     `,
     prisma.ticket.groupBy({ by: ['source', 'status'] as any, where, _count: { id: true } }),
@@ -160,12 +167,14 @@ export async function getAnalytics(filters: AnalyticsFilters) {
   const monthMap = new Map<string, MonthRow>()
   for (const r of monthlyRaw) {
     const key = new Date(r.month).toISOString().slice(0, 7) // "YYYY-MM"
-    if (!monthMap.has(key)) monthMap.set(key, { month: key, open: 0, in_progress: 0, closed: 0, total: 0 })
+    if (!monthMap.has(key)) monthMap.set(key, { month: key, open: 0, in_progress: 0, closed: 0, total: 0, client_total: 0, cem_total: 0 })
     const entry = monthMap.get(key)!
-    if (r.status === 'open') entry.open = r.count
-    else if (r.status === 'in_progress') entry.in_progress = r.count
-    else if (r.status === 'closed') entry.closed = r.count
+    if (r.status === 'open') entry.open += r.count
+    else if (r.status === 'in_progress') entry.in_progress += r.count
+    else if (r.status === 'closed') entry.closed += r.count
     entry.total += r.count
+    if (r.source === 'client') entry.client_total += r.count
+    else if (r.source === 'cem') entry.cem_total += r.count
   }
   const byMonth = Array.from(monthMap.values())
 
@@ -186,6 +195,8 @@ export async function getAnalytics(filters: AnalyticsFilters) {
     id,
     name: SOURCE_LABELS[id] ?? id,
     ...counts,
+    client_total: id === 'client' ? counts.total : 0,
+    cem_total:    id === 'cem'    ? counts.total : 0,
   }))
 
   return {

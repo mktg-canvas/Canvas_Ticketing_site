@@ -25,6 +25,9 @@ const COLORS = {
   open:    '#ef4444',
   inProg:  '#f59e0b',
   closed:  '#10b981',
+  total:   '#6366f1',
+  client:  '#f97316',
+  cem:     '#06b6d4',
   gridLn:  '#e5e7eb',
   axisTxt: '#6b7280',
 }
@@ -207,6 +210,9 @@ export default function Analytics() {
       Open: r.open,
       'In Progress': r.in_progress,
       Closed: r.closed,
+      Total: r.total,
+      'Client Reported': r.client_total,
+      'CEM Observed': r.cem_total,
       _total: r.total,
     }))
   }, [data, dimension])
@@ -588,7 +594,7 @@ export default function Analytics() {
             ) : chartType === 'bar' ? (
               <ResponsiveContainer width="100%" height={isMobile ? 240 : 320}>
                 <BarChart data={chartData} margin={{ top: 4, right: 16, left: -8, bottom: 0 }}
-                  barCategoryGap="22%">
+                  barCategoryGap="28%">
                   <CartesianGrid strokeDasharray="3 3" stroke={COLORS.gridLn} vertical={false} />
                   <XAxis
                     dataKey="name"
@@ -608,9 +614,19 @@ export default function Analytics() {
                     iconSize={10}
                     formatter={(value) => <span style={{ color: 'var(--color-txt2)' }}>{value}</span>}
                   />
-                  <Bar dataKey="Open"        stackId="a" fill={COLORS.open}   radius={[0, 0, 0, 0]} />
-                  <Bar dataKey="In Progress" stackId="a" fill={COLORS.inProg} radius={[0, 0, 0, 0]} />
-                  <Bar dataKey="Closed"      stackId="a" fill={COLORS.closed} radius={[4, 4, 0, 0]} />
+                  {dimension === 'bySource' ? (
+                    <>
+                      <Bar dataKey="Open"        stackId="a" fill={COLORS.open}   radius={[0, 0, 0, 0]} />
+                      <Bar dataKey="In Progress" stackId="a" fill={COLORS.inProg} radius={[0, 0, 0, 0]} />
+                      <Bar dataKey="Closed"      stackId="a" fill={COLORS.closed} radius={[4, 4, 0, 0]} />
+                    </>
+                  ) : (
+                    <>
+                      <Bar dataKey="Total"           fill={COLORS.total}  radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="Client Reported" fill={COLORS.client} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="CEM Observed"    fill={COLORS.cem}    radius={[4, 4, 0, 0]} />
+                    </>
+                  )}
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -635,9 +651,19 @@ export default function Analytics() {
                     iconSize={14}
                     formatter={(value) => <span style={{ color: 'var(--color-txt2)' }}>{value}</span>}
                   />
-                  <Line type="monotone" dataKey="Open"        stroke={COLORS.open}   strokeWidth={2.2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
-                  <Line type="monotone" dataKey="In Progress" stroke={COLORS.inProg} strokeWidth={2.2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
-                  <Line type="monotone" dataKey="Closed"      stroke={COLORS.closed} strokeWidth={2.2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                  {dimension === 'bySource' ? (
+                    <>
+                      <Line type="monotone" dataKey="Open"        stroke={COLORS.open}   strokeWidth={2.2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                      <Line type="monotone" dataKey="In Progress" stroke={COLORS.inProg} strokeWidth={2.2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                      <Line type="monotone" dataKey="Closed"      stroke={COLORS.closed} strokeWidth={2.2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                    </>
+                  ) : (
+                    <>
+                      <Line type="monotone" dataKey="Total"           stroke={COLORS.total}  strokeWidth={2.2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                      <Line type="monotone" dataKey="Client Reported" stroke={COLORS.client} strokeWidth={2.2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                      <Line type="monotone" dataKey="CEM Observed"    stroke={COLORS.cem}    strokeWidth={2.2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                    </>
+                  )}
                 </LineChart>
               </ResponsiveContainer>
             )}

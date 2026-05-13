@@ -19,6 +19,8 @@ export interface DimRow {
   in_progress: number
   closed: number
   total: number
+  client_total: number
+  cem_total: number
 }
 
 export interface MonthRow {
@@ -27,6 +29,8 @@ export interface MonthRow {
   in_progress: number
   closed: number
   total: number
+  client_total: number
+  cem_total: number
 }
 
 export interface AnalyticsData {
