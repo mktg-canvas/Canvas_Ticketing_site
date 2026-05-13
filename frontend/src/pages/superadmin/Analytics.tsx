@@ -728,62 +728,58 @@ export default function Analytics() {
                   )
                 })()}
               </ResponsiveContainer>
-            ) : (
-              <>
-              <ResponsiveContainer width="100%" height={isMobile ? 240 : 320}>
+            ) : dimension === 'bySource' ? (
+              <ResponsiveContainer width="100%" height={isMobile ? 240 : 300}>
                 <LineChart data={chartData} margin={{ top: 4, right: 16, left: -8, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={COLORS.gridLn} vertical={false} />
-                  <XAxis
-                    dataKey="name"
-                    tick={{ fontSize: 11, fill: COLORS.axisTxt }}
-                    tickLine={false}
-                    axisLine={false}
-                    interval={0}
-                    angle={chartData.length > 6 ? -30 : 0}
-                    textAnchor={chartData.length > 6 ? 'end' : 'middle'}
-                    height={chartData.length > 6 ? 70 : 30}
-                  />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: COLORS.axisTxt }} tickLine={false} axisLine={false} interval={0} angle={chartData.length > 6 ? -30 : 0} textAnchor={chartData.length > 6 ? 'end' : 'middle'} height={chartData.length > 6 ? 70 : 30} />
                   <YAxis tick={{ fontSize: 11, fill: COLORS.axisTxt }} tickLine={false} axisLine={false} allowDecimals={false} />
                   <Tooltip content={<ChartTooltip />} />
-                  <Legend
-                    wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
-                    iconType="line"
-                    iconSize={14}
-                    formatter={(value) => <span style={{ color: 'var(--color-txt2)' }}>{value}</span>}
-                  />
-                  {dimension === 'bySource' ? (
-                    <>
-                      <Line type="monotone" dataKey="Open"        stroke={COLORS.open}   strokeWidth={2.2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
-                      <Line type="monotone" dataKey="In Progress" stroke={COLORS.inProg} strokeWidth={2.2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
-                      <Line type="monotone" dataKey="Closed"      stroke={COLORS.closed} strokeWidth={2.2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
-                    </>
-                  ) : (
-                    <>
-                      {/* Source — solid */}
-                      <Line type="monotone" dataKey="Total"           stroke={COLORS.total}  strokeWidth={2.2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
-                      <Line type="monotone" dataKey="Client Reported" stroke={COLORS.client} strokeWidth={2.2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
-                      <Line type="monotone" dataKey="CEM Observed"    stroke={COLORS.cem}    strokeWidth={2.2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
-                      {/* Status — dashed */}
-                      <Line type="monotone" dataKey="Open"        stroke={COLORS.open}   strokeWidth={1.8} strokeDasharray="5 3" dot={{ r: 2 }} activeDot={{ r: 4 }} />
-                      <Line type="monotone" dataKey="In Progress" stroke={COLORS.inProg} strokeWidth={1.8} strokeDasharray="5 3" dot={{ r: 2 }} activeDot={{ r: 4 }} />
-                      <Line type="monotone" dataKey="Closed"      stroke={COLORS.closed} strokeWidth={1.8} strokeDasharray="5 3" dot={{ r: 2 }} activeDot={{ r: 4 }} />
-                    </>
-                  )}
+                  <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} iconType="line" iconSize={14} formatter={(v) => <span style={{ color: 'var(--color-txt2)' }}>{v}</span>} />
+                  <Line type="monotone" dataKey="Open"        stroke={COLORS.open}   strokeWidth={2.2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                  <Line type="monotone" dataKey="In Progress" stroke={COLORS.inProg} strokeWidth={2.2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                  <Line type="monotone" dataKey="Closed"      stroke={COLORS.closed} strokeWidth={2.2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
                 </LineChart>
               </ResponsiveContainer>
-              {dimension !== 'bySource' && (
-                <div className="flex justify-center gap-5 pb-2 text-xs" style={{ color: 'var(--color-txt3)' }}>
-                  <span className="flex items-center gap-1.5">
-                    <svg width="20" height="4"><line x1="0" y1="2" x2="20" y2="2" stroke="currentColor" strokeWidth="2" /></svg>
-                    Source (Total · Client · CEM)
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <svg width="20" height="4"><line x1="0" y1="2" x2="20" y2="2" stroke="currentColor" strokeWidth="2" strokeDasharray="5 3" /></svg>
-                    Status (Open · In Progress · Closed)
-                  </span>
-                </div>
-              )}
-              </>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 px-2 pb-3">
+                {([
+                  {
+                    title: 'By Source',
+                    lines: [
+                      { key: 'Total',           color: COLORS.total },
+                      { key: 'Client Reported', color: COLORS.client },
+                      { key: 'CEM Observed',    color: COLORS.cem },
+                    ],
+                  },
+                  {
+                    title: 'By Status',
+                    lines: [
+                      { key: 'Open',        color: COLORS.open },
+                      { key: 'In Progress', color: COLORS.inProg },
+                      { key: 'Closed',      color: COLORS.closed },
+                    ],
+                  },
+                ] as const).map(panel => (
+                  <div key={panel.title}>
+                    <p className="text-xs font-semibold text-center mb-1" style={{ color: 'var(--color-txt2)' }}>
+                      {panel.title}
+                    </p>
+                    <ResponsiveContainer width="100%" height={isMobile ? 200 : 240}>
+                      <LineChart data={chartData} margin={{ top: 4, right: 8, left: -18, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={COLORS.gridLn} vertical={false} />
+                        <XAxis dataKey="name" tick={{ fontSize: 10, fill: COLORS.axisTxt }} tickLine={false} axisLine={false} interval={0} angle={chartData.length > 5 ? -30 : 0} textAnchor={chartData.length > 5 ? 'end' : 'middle'} height={chartData.length > 5 ? 60 : 24} />
+                        <YAxis tick={{ fontSize: 10, fill: COLORS.axisTxt }} tickLine={false} axisLine={false} allowDecimals={false} width={28} />
+                        <Tooltip content={<ChartTooltip />} />
+                        <Legend wrapperStyle={{ fontSize: 10, paddingTop: 6 }} iconType="line" iconSize={12} formatter={(v) => <span style={{ color: 'var(--color-txt2)' }}>{v}</span>} />
+                        {panel.lines.map(l => (
+                          <Line key={l.key} type="monotone" dataKey={l.key} stroke={l.color} strokeWidth={2} dot={{ r: 2.5 }} activeDot={{ r: 4 }} />
+                        ))}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
 
