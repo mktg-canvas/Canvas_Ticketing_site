@@ -125,6 +125,21 @@ export async function deleteTicket(req: AuthRequest, res: Response): Promise<voi
   }
 }
 
+export async function updateStageNote(req: AuthRequest, res: Response): Promise<void> {
+  const schema = z.object({
+    stage: z.enum(['open', 'in_progress', 'closed']),
+    note: z.string(),
+  })
+  const parsed = schema.safeParse(req.body)
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten().fieldErrors }); return }
+  try {
+    await ticketsService.updateStageNote(req.params.id as string, parsed.data.stage, parsed.data.note)
+    res.json({ ok: true })
+  } catch (err: any) {
+    res.status(500).json({ error: err.message })
+  }
+}
+
 export async function uploadAttachment(req: AuthRequest, res: Response): Promise<void> {
   const file = req.file
   if (!file) { res.status(400).json({ error: 'No file uploaded' }); return }

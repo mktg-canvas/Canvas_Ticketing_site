@@ -56,6 +56,9 @@ export interface Ticket {
   source: 'client' | 'cem'
   is_priority: boolean
   raised_by: string
+  open_note?: string | null
+  in_progress_note?: string | null
+  closed_note?: string | null
   opened_at?: string
   in_progress_at?: string
   closed_at?: string

@@ -30,6 +30,10 @@ export async function createTicket(
       status: (data.status as TicketStatus) ?? 'open',
       source: (data.source as TicketSource) ?? 'client',
       is_priority: data.isPriority ?? false,
+      // Map initial description to the stage matching the initial status
+      open_note:        (!data.status || data.status === 'open')        ? (data.description ?? '') : undefined,
+      in_progress_note: data.status === 'in_progress'                   ? (data.description ?? '') : undefined,
+      closed_note:      data.status === 'closed'                        ? (data.description ?? '') : undefined,
       opened_at: (!data.status || data.status === 'open') ? new Date() : undefined,
       in_progress_at: data.status === 'in_progress' ? new Date() : undefined,
       closed_at: data.status === 'closed' ? new Date() : undefined,
@@ -270,4 +274,18 @@ export async function uploadAttachment(actor: JwtPayload, ticketId: string, file
     },
   })
   return attachment
+}
+
+export async function updateStageNote(
+  ticketId: string,
+  stage: 'open' | 'in_progress' | 'closed',
+  note: string,
+) {
+  const field = stage === 'open' ? 'open_note'
+    : stage === 'in_progress' ? 'in_progress_note'
+    : 'closed_note'
+  return prisma.ticket.update({
+    where: { id: ticketId },
+    data: { [field]: note },
+  })
 }
