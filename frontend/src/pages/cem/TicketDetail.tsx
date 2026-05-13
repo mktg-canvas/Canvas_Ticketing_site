@@ -4,7 +4,7 @@ import { ArrowLeft, Building2, Layers, Briefcase, User, Clock, FileText, Image a
 import { useTicket, useUpdateStatus, useEditTicket, useDeleteTicket, useUploadAttachment } from '../../hooks/useTickets'
 import { useBuildings } from '../../hooks/useBuildings'
 import { useFloors } from '../../hooks/useFloors'
-import { useCompanies } from '../../hooks/useCompanies'
+import { useClients } from '../../hooks/useClients'
 import { useCategories } from '../../hooks/useCategories'
 import { useAuthStore } from '../../store/authStore'
 import { StatusBadge } from '../../components/tickets/StatusBadge'
@@ -53,7 +53,7 @@ function EditSelect({ label, value, onChange, children }: {
   )
 }
 
-export default function FmTicketDetail() {
+export default function CemTicketDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const user = useAuthStore(s => s.user)
@@ -70,16 +70,16 @@ export default function FmTicketDetail() {
   const { data: buildings = [] } = useBuildings()
   const [editBuildingId, setEditBuildingId] = useState('')
   const { data: floors = [] } = useFloors(editBuildingId || undefined)
-  const { data: companies = [] } = useCompanies()
+  const { data: clients = [] } = useClients()
   const { data: categories = [] } = useCategories()
 
   const [showStatusSheet, setShowStatusSheet] = useState(false)
   const [showEditSheet, setShowEditSheet] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [editForm, setEditForm] = useState({
-    buildingId: '', floorId: '', companyId: '',
+    buildingId: '', floorId: '', clientId: '',
     categoryId: '', subCategory: '', description: '',
-    source: 'client' as 'client' | 'fm',
+    source: 'client' as 'client' | 'cem',
   })
 
   function openEditSheet() {
@@ -90,7 +90,7 @@ export default function FmTicketDetail() {
     setEditForm({
       buildingId: bid,
       floorId: ticket.floor_id,
-      companyId: ticket.company_id,
+      clientId: ticket.client_id,
       categoryId: catId,
       subCategory: ticket.sub_category ?? '',
       description: ticket.description ?? '',
@@ -114,7 +114,7 @@ export default function FmTicketDetail() {
       id: id!,
       buildingId: editForm.buildingId || undefined,
       floorId: editForm.floorId || undefined,
-      companyId: editForm.companyId || undefined,
+      clientId: editForm.clientId || undefined,
       categoryId: editForm.categoryId || undefined,
       subCategory: editForm.subCategory || undefined,
       description: editForm.description,
@@ -185,7 +185,7 @@ export default function FmTicketDetail() {
           <div className="flex items-center gap-1.5 min-w-0 flex-1">
             <span className="text-xs font-mono font-bold px-2 py-1 rounded-lg shrink-0"
               style={{ background: 'var(--color-bg3)', color: 'var(--color-txt2)' }}>
-              {ticket.ticket_number}
+              #{ticket.ticket_number}
             </span>
             <StatusBadge status={ticket.status} />
           </div>
@@ -230,16 +230,16 @@ export default function FmTicketDetail() {
               {ticket.floor?.name && <> · {ticket.floor.name}</>}
             </span>
             <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--color-txt3)' }}>
-              <Briefcase size={11} /> {ticket.company?.name}
+              <Briefcase size={11} /> {ticket.client?.name}
             </span>
             <span
               className="text-xs px-2 py-0.5 rounded-md font-semibold"
-              style={ticket.source === 'fm'
+              style={ticket.source === 'cem'
                 ? { background: 'var(--bg-accent-15)', color: 'var(--color-accent)' }
                 : { background: 'var(--bg-warning-15)', color: 'var(--color-warning)' }
               }
             >
-              {ticket.source === 'fm' ? 'FM Observed' : 'Client Reported'}
+              {ticket.source === 'cem' ? 'CEM Observed' : 'Client Reported'}
             </span>
             <span className="ml-auto text-xs" style={{ color: 'var(--color-txt3)' }}>
               {fmt(ticket.created_at)}
@@ -254,7 +254,7 @@ export default function FmTicketDetail() {
             {[
               { icon: Building2, label: 'Building',   value: ticket.building?.name },
               { icon: Layers,    label: 'Floor',       value: ticket.floor?.name },
-              { icon: Briefcase, label: 'Company',     value: ticket.company?.name },
+              { icon: Briefcase, label: 'Client',      value: ticket.client?.name },
               { icon: User,      label: 'Raised by',   value: (ticket as any).raiser?.name },
             ].filter(d => d.value).map(({ icon: Icon, label, value }) => (
               <div key={label} className="rounded-xl p-3.5 border" style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}>
@@ -484,12 +484,12 @@ export default function FmTicketDetail() {
               </EditSelect>
 
               <EditSelect
-                label="Company"
-                value={editForm.companyId}
-                onChange={v => setEditForm(f => ({ ...f, companyId: v }))}
+                label="Client"
+                value={editForm.clientId}
+                onChange={v => setEditForm(f => ({ ...f, clientId: v }))}
               >
-                <option value="">Select company</option>
-                {(companies as any[]).map((c: any) => (
+                <option value="">Select client</option>
+                {(clients as any[]).map((c: any) => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </EditSelect>
@@ -547,7 +547,7 @@ export default function FmTicketDetail() {
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-semibold" style={{ color: 'var(--color-txt3)' }}>Ticket Source</label>
                 <div className="flex rounded-xl overflow-hidden border" style={{ borderColor: 'var(--color-bg4)' }}>
-                  {(['client', 'fm'] as const).map(val => {
+                  {(['client', 'cem'] as const).map(val => {
                     const active = editForm.source === val
                     return (
                       <button
@@ -560,7 +560,7 @@ export default function FmTicketDetail() {
                           color: active ? '#fff' : 'var(--color-txt3)',
                         }}
                       >
-                        {val === 'client' ? 'Client Reported' : 'FM Observed'}
+                        {val === 'client' ? 'Client Reported' : 'CEM Observed'}
                       </button>
                     )
                   })}
@@ -607,7 +607,7 @@ export default function FmTicketDetail() {
             </div>
             <p className="text-base font-bold text-center mb-1" style={{ color: 'var(--color-txt1)' }}>Delete Ticket?</p>
             <p className="text-sm text-center mb-6" style={{ color: 'var(--color-txt3)' }}>
-              <span className="font-mono font-semibold" style={{ color: 'var(--color-txt2)' }}>{ticket.ticket_number}</span> will be permanently deleted. This cannot be undone.
+              <span className="font-mono font-semibold" style={{ color: 'var(--color-txt2)' }}>#{ticket.ticket_number}</span> will be permanently deleted. This cannot be undone.
             </p>
             <div className="flex flex-col gap-2.5">
               <button

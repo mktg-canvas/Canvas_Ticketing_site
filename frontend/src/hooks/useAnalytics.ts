@@ -6,10 +6,10 @@ export interface AnalyticsFilters {
   from?: string
   to?: string
   buildingId?: string
-  companyId?: string
+  clientId?: string
   categoryId?: string
-  fmId?: string
-  source?: 'client' | 'fm'
+  cemId?: string
+  source?: 'client' | 'cem'
 }
 
 export interface DimRow {
@@ -39,8 +39,8 @@ export interface AnalyticsData {
   }
   byBuilding: DimRow[]
   byCategory: DimRow[]
-  byCompany: DimRow[]
-  byFm: DimRow[]
+  byClient: DimRow[]
+  byCem: DimRow[]
   byFloor: DimRow[]
   byMonth: MonthRow[]
   bySource: DimRow[]
@@ -51,9 +51,9 @@ export function useAnalytics(filters: AnalyticsFilters) {
   if (filters.from) params.set('from', filters.from)
   if (filters.to) params.set('to', filters.to)
   if (filters.buildingId) params.set('buildingId', filters.buildingId)
-  if (filters.companyId) params.set('companyId', filters.companyId)
+  if (filters.clientId) params.set('clientId', filters.clientId)
   if (filters.categoryId) params.set('categoryId', filters.categoryId)
-  if (filters.fmId) params.set('fmId', filters.fmId)
+  if (filters.cemId) params.set('cemId', filters.cemId)
   if (filters.source) params.set('source', filters.source)
 
   const accessToken = useAuthStore(s => s.accessToken)

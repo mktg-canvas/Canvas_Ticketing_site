@@ -1,23 +1,25 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  ArrowLeft, BarChart2, TrendingUp, Clock, CheckCircle, Ticket,
+  BarChart2, LineChart as LineChartIcon, TrendingUp, Clock, CheckCircle, Ticket,
   AlertCircle, ChevronDown, Calendar, SlidersHorizontal, X, Download, Loader2,
 } from 'lucide-react'
+import SuperAdminNav from '../../components/shared/SuperAdminNav'
 import html2canvas from 'html2canvas'
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer,
 } from 'recharts'
 import { useAnalytics, type DimRow, type MonthRow } from '../../hooks/useAnalytics'
 import { useBuildings } from '../../hooks/useBuildings'
-import { useCompanies } from '../../hooks/useCompanies'
+import { useClients } from '../../hooks/useClients'
 import { useCategories } from '../../hooks/useCategories'
 import { useUsers } from '../../hooks/useUsers'
 import { useAuthStore } from '../../store/authStore'
 
 type DatePreset = '7d' | '30d' | '90d' | 'all' | 'custom'
-type Dimension = 'byBuilding' | 'byCategory' | 'byCompany' | 'byFm' | 'byMonth' | 'bySource'
+type Dimension = 'byBuilding' | 'byCategory' | 'byClient' | 'byCem' | 'byMonth' | 'bySource'
+type ChartType = 'bar' | 'line'
 
 const COLORS = {
   open:    '#ef4444',
@@ -38,8 +40,8 @@ const PRESETS: { value: DatePreset; label: string }[] = [
 const DIMENSIONS: { value: Dimension; label: string }[] = [
   { value: 'byBuilding', label: 'Building' },
   { value: 'byCategory', label: 'Issue Category' },
-  { value: 'byCompany',  label: 'Company' },
-  { value: 'byFm',       label: 'FM' },
+  { value: 'byClient',   label: 'Client' },
+  { value: 'byCem',      label: 'CEM' },
   { value: 'byMonth',    label: 'Monthly Trend' },
   { value: 'bySource',   label: 'Source' },
 ]
@@ -138,7 +140,7 @@ const ChartTooltip = ({ active, payload, label }: any) => {
       <p className="font-bold mb-2" style={{ color: 'var(--color-txt1)' }}>{label}</p>
       {payload.map((p: any) => (
         <div key={p.name} className="flex items-center gap-2 mb-1">
-          <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: p.fill }} />
+          <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: p.color ?? p.fill }} />
           <span style={{ color: 'var(--color-txt2)' }}>{p.name}:</span>
           <span className="font-semibold" style={{ color: 'var(--color-txt1)' }}>{p.value}</span>
         </div>
@@ -159,12 +161,13 @@ export default function Analytics() {
   const [customFrom, setCustomFrom] = useState(todayStr())
   const [customTo, setCustomTo] = useState(todayStr())
   const [dimension, setDimension] = useState<Dimension>('byBuilding')
+  const [chartType, setChartType] = useState<ChartType>('bar')
   const [showFilters, setShowFilters] = useState(false)
   const [buildingId, setBuildingId] = useState('')
-  const [companyId, setCompanyId] = useState('')
+  const [clientId, setClientId] = useState('')
   const [categoryId, setCategoryId] = useState('')
-  const [fmId, setFmId] = useState('')
-  const [source, setSource] = useState<'all' | 'client' | 'fm'>('all')
+  const [cemId, setCemId] = useState('')
+  const [source, setSource] = useState<'all' | 'client' | 'cem'>('all')
 
   const dateRange = useMemo(
     () => computeRange(preset, customFrom, customTo),
@@ -173,12 +176,12 @@ export default function Analytics() {
   const filters = useMemo(() => ({
     ...dateRange,
     ...(buildingId && { buildingId }),
-    ...(companyId && { companyId }),
+    ...(clientId && { clientId }),
     ...(categoryId && { categoryId }),
-    ...(fmId && { fmId }),
+    ...(cemId && { cemId }),
     ...(source !== 'all' && { source }),
-  }), [dateRange, buildingId, companyId, categoryId, fmId, source])
-  const hasFilter = !!(buildingId || companyId || categoryId || fmId)
+  }), [dateRange, buildingId, clientId, categoryId, cemId, source])
+  const hasFilter = !!(buildingId || clientId || categoryId || cemId)
 
   const accessToken = useAuthStore(s => s.accessToken)
   const { data, isLoading, isError, error, refetch } = useAnalytics(filters)
@@ -191,10 +194,10 @@ export default function Analytics() {
     return () => mq.removeEventListener('change', handler)
   }, [])
   const { data: buildings = [] } = useBuildings()
-  const { data: companies = [] } = useCompanies()
+  const { data: clients = [] } = useClients()
   const { data: categories = [] } = useCategories()
   const { data: allUsers = [] } = useUsers()
-  const fms = allUsers.filter((u: any) => u.role === 'fm')
+  const cems = allUsers.filter((u: any) => u.role === 'cem')
 
   const chartData = useMemo(() => {
     if (!data) return []
@@ -225,8 +228,8 @@ export default function Analytics() {
   const sourceRows = useMemo(() => {
     if (!data?.bySource) return null
     const client = data.bySource.find(r => r.id === 'client')
-    const fm = data.bySource.find(r => r.id === 'fm')
-    return { client, fm }
+    const cem = data.bySource.find(r => r.id === 'cem')
+    return { client, cem }
   }, [data])
 
   const dimLabel = DIMENSIONS.find(d => d.value === dimension)?.label ?? ''
@@ -236,7 +239,7 @@ export default function Analytics() {
     : PRESETS.find(p => p.value === preset)?.label
 
   function clearFilters() {
-    setBuildingId(''); setCompanyId(''); setCategoryId(''); setFmId(''); setSource('all')
+    setBuildingId(''); setClientId(''); setCategoryId(''); setCemId(''); setSource('all')
   }
 
   async function downloadPDF() {
@@ -259,9 +262,9 @@ export default function Analytics() {
       // Build active filter labels
       const activeFilters: string[] = []
       if (buildingId) activeFilters.push(`Building: ${buildings.find((b: any) => b.id === buildingId)?.name ?? buildingId}`)
-      if (companyId)  activeFilters.push(`Company: ${companies.find((c: any) => c.id === companyId)?.name ?? companyId}`)
+      if (clientId)   activeFilters.push(`Client: ${clients.find((c: any) => c.id === clientId)?.name ?? clientId}`)
       if (categoryId) activeFilters.push(`Category: ${categories.find((c: any) => c.id === categoryId)?.name ?? categoryId}`)
-      if (fmId)       activeFilters.push(`FM: ${fms.find((u: any) => u.id === fmId)?.name ?? fmId}`)
+      if (cemId)      activeFilters.push(`CEM: ${cems.find((u: any) => u.id === cemId)?.name ?? cemId}`)
 
       const [{ pdf }, { AnalyticsReportPDF }] = await Promise.all([
         import('@react-pdf/renderer'),
@@ -292,21 +295,7 @@ export default function Analytics() {
 
   return (
     <div className="min-h-screen pb-12" style={{ background: 'var(--color-bg0)' }}>
-
-      {/* Header */}
-      <div className="sticky top-0 z-10 px-4 py-3 border-b flex items-center gap-3"
-        style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}>
-        <button onClick={() => navigate('/superadmin/dashboard')}
-          className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--color-bg3)] transition-colors">
-          <ArrowLeft size={18} style={{ color: 'var(--color-txt2)' }} />
-        </button>
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <BarChart2 size={16} style={{ color: 'var(--color-accent)' }} />
-          <h1 className="text-sm font-semibold truncate" style={{ color: 'var(--color-txt1)' }}>
-            Analytics & Reports
-          </h1>
-        </div>
-      </div>
+      <SuperAdminNav />
 
       <div className="max-w-6xl mx-auto p-3 sm:p-4 flex flex-col gap-3 sm:gap-4">
 
@@ -352,7 +341,7 @@ export default function Analytics() {
           {([
             { value: 'all',    label: 'All Tickets' },
             { value: 'client', label: 'Client Reported' },
-            { value: 'fm',     label: 'FM Observed' },
+            { value: 'cem',    label: 'CEM Observed' },
           ] as const).map(opt => (
             <button
               key={opt.value}
@@ -361,7 +350,7 @@ export default function Analytics() {
               style={{
                 background: source === opt.value
                   ? opt.value === 'client' ? 'var(--color-warning)'
-                  : opt.value === 'fm'     ? 'var(--color-accent)'
+                  : opt.value === 'cem'    ? 'var(--color-accent)'
                   :                          'var(--color-accent)'
                   : 'var(--color-bg3)',
                 color: source === opt.value ? '#fff' : 'var(--color-txt2)',
@@ -372,7 +361,7 @@ export default function Analytics() {
           ))}
           {source !== 'all' && (
             <span className="ml-auto text-xs" style={{ color: 'var(--color-txt3)' }}>
-              Showing {source === 'client' ? 'client-reported' : 'FM-observed'} tickets only
+              Showing {source === 'client' ? 'client-reported' : 'CEM-observed'} tickets only
             </span>
           )}
         </div>
@@ -481,14 +470,14 @@ export default function Analytics() {
               <FilterSelect value={buildingId} onChange={setBuildingId} placeholder="All Buildings">
                 {buildings.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
               </FilterSelect>
-              <FilterSelect value={companyId} onChange={setCompanyId} placeholder="All Companies">
-                {companies.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              <FilterSelect value={clientId} onChange={setClientId} placeholder="All Clients">
+                {clients.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </FilterSelect>
               <FilterSelect value={categoryId} onChange={setCategoryId} placeholder="All Categories">
                 {categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </FilterSelect>
-              <FilterSelect value={fmId} onChange={setFmId} placeholder="All FMs">
-                {fms.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}
+              <FilterSelect value={cemId} onChange={setCemId} placeholder="All CEMs">
+                {cems.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}
               </FilterSelect>
               {hasFilter && (
                 <button onClick={clearFilters}
@@ -506,7 +495,7 @@ export default function Analytics() {
             <div className="px-4 py-3 border-b grid grid-cols-2 gap-3" style={{ borderColor: 'var(--color-bg4)' }}>
               {[
                 { key: 'client', label: 'Client Reported', color: 'var(--color-warning)', row: sourceRows.client },
-                { key: 'fm',     label: 'FM Observed',     color: 'var(--color-accent)',  row: sourceRows.fm },
+                { key: 'cem',    label: 'CEM Observed',    color: 'var(--color-accent)',  row: sourceRows.cem },
               ].map(({ label, color, row }) => (
                 <div key={label} className="rounded-xl p-3 border" style={{ background: 'var(--color-bg2)', borderColor: 'var(--color-bg4)' }}>
                   <p className="text-xs font-semibold mb-1" style={{ color }}>{label}</p>
@@ -519,10 +508,10 @@ export default function Analytics() {
             </div>
           )}
 
-          {/* Chart header */}
-          <div className="px-5 py-3 border-b flex items-center justify-between"
+          {/* Chart header — title + chart-type toggle + export */}
+          <div className="px-5 py-3 border-b flex items-center justify-between gap-3 flex-wrap"
             style={{ borderColor: 'var(--color-bg4)' }}>
-            <div>
+            <div className="min-w-0">
               <h2 className="text-sm font-bold" style={{ color: 'var(--color-txt1)' }}>
                 Tickets by {dimLabel}
               </h2>
@@ -532,21 +521,53 @@ export default function Analytics() {
                 {!isLoading && ` · ${totalTickets} tickets across ${tableRows.length} ${tableRows.length === 1 ? 'item' : 'items'}`}
               </p>
             </div>
-            {!isLoading && tableRows.length > 0 && (
-              <button
+            <div className="flex items-center gap-2 shrink-0">
+              {/* Chart-type toggle */}
+              <div
                 data-html2canvas-ignore
-                onClick={downloadPDF}
-                disabled={isExporting}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold shrink-0 disabled:opacity-60"
-                style={{ background: 'var(--color-bg3)', color: 'var(--color-txt2)' }}
-                title="Download PDF report"
+                className="flex items-center gap-0.5 p-0.5 rounded-lg border"
+                style={{ background: 'var(--color-bg2)', borderColor: 'var(--color-bg4)' }}
+                role="group"
+                aria-label="Chart type"
               >
-                {isExporting
-                  ? <><Loader2 size={13} className="animate-spin" />Exporting…</>
-                  : <><Download size={13} />Export PDF</>
-                }
-              </button>
-            )}
+                {([
+                  { value: 'bar',  label: 'Bar',  Icon: BarChart2 },
+                  { value: 'line', label: 'Line', Icon: LineChartIcon },
+                ] as const).map(opt => {
+                  const active = chartType === opt.value
+                  return (
+                    <button
+                      key={opt.value}
+                      onClick={() => setChartType(opt.value)}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold transition-colors"
+                      aria-pressed={active}
+                      style={{
+                        background: active ? 'var(--color-accent)' : 'transparent',
+                        color: active ? '#fff' : 'var(--color-txt2)',
+                      }}
+                    >
+                      <opt.Icon size={12} />
+                      {opt.label}
+                    </button>
+                  )
+                })}
+              </div>
+              {!isLoading && tableRows.length > 0 && (
+                <button
+                  data-html2canvas-ignore
+                  onClick={downloadPDF}
+                  disabled={isExporting}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold shrink-0 disabled:opacity-60"
+                  style={{ background: 'var(--color-bg3)', color: 'var(--color-txt2)' }}
+                  title="Download PDF report"
+                >
+                  {isExporting
+                    ? <><Loader2 size={13} className="animate-spin" />Exporting…</>
+                    : <><Download size={13} />Export PDF</>
+                  }
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Chart */}
@@ -564,7 +585,7 @@ export default function Analytics() {
                   Try adjusting the date range or filters
                 </p>
               </div>
-            ) : (
+            ) : chartType === 'bar' ? (
               <ResponsiveContainer width="100%" height={isMobile ? 240 : 320}>
                 <BarChart data={chartData} margin={{ top: 4, right: 16, left: -8, bottom: 0 }}
                   barCategoryGap="22%">
@@ -591,6 +612,33 @@ export default function Analytics() {
                   <Bar dataKey="In Progress" stackId="a" fill={COLORS.inProg} radius={[0, 0, 0, 0]} />
                   <Bar dataKey="Closed"      stackId="a" fill={COLORS.closed} radius={[4, 4, 0, 0]} />
                 </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <ResponsiveContainer width="100%" height={isMobile ? 240 : 320}>
+                <LineChart data={chartData} margin={{ top: 4, right: 16, left: -8, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={COLORS.gridLn} vertical={false} />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 11, fill: COLORS.axisTxt }}
+                    tickLine={false}
+                    axisLine={false}
+                    interval={0}
+                    angle={chartData.length > 6 ? -30 : 0}
+                    textAnchor={chartData.length > 6 ? 'end' : 'middle'}
+                    height={chartData.length > 6 ? 70 : 30}
+                  />
+                  <YAxis tick={{ fontSize: 11, fill: COLORS.axisTxt }} tickLine={false} axisLine={false} allowDecimals={false} />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Legend
+                    wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
+                    iconType="line"
+                    iconSize={14}
+                    formatter={(value) => <span style={{ color: 'var(--color-txt2)' }}>{value}</span>}
+                  />
+                  <Line type="monotone" dataKey="Open"        stroke={COLORS.open}   strokeWidth={2.2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                  <Line type="monotone" dataKey="In Progress" stroke={COLORS.inProg} strokeWidth={2.2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                  <Line type="monotone" dataKey="Closed"      stroke={COLORS.closed} strokeWidth={2.2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                </LineChart>
               </ResponsiveContainer>
             )}
           </div>

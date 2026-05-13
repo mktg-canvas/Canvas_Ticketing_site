@@ -7,7 +7,7 @@ import authRoutes from './routes/auth.routes'
 import userRoutes from './routes/users.routes'
 import buildingRoutes from './routes/buildings.routes'
 import floorRoutes from './routes/floors.routes'
-import companyRoutes from './routes/companies.routes'
+import clientRoutes from './routes/clients.routes'
 import ticketRoutes from './routes/tickets.routes'
 import categoryRoutes from './routes/categories.routes'
 import analyticsRoutes from './routes/analytics.routes'
@@ -29,7 +29,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/users', userRoutes)
 app.use('/api/buildings', buildingRoutes)
 app.use('/api/floors', floorRoutes)
-app.use('/api/companies', companyRoutes)
+app.use('/api/clients', clientRoutes)
 app.use('/api/tickets', ticketRoutes)
 app.use('/api/categories', categoryRoutes)
 app.use('/api/analytics', analyticsRoutes)

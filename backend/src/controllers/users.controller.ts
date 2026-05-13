@@ -7,7 +7,7 @@ const createUserSchema = z.object({
   name: z.string().min(1),
   email: z.string().email(),
   password: z.string().min(8),
-  role: z.enum(['fm', 'super_admin']),
+  role: z.enum(['cem', 'super_admin']),
 })
 
 export async function listUsers(_req: AuthRequest, res: Response): Promise<void> {

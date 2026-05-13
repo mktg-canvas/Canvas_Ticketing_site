@@ -1,38 +1,8 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Ticket, Clock, CheckCircle, Calendar } from 'lucide-react'
-
-type Period = '7d' | '30d' | 'all' | 'custom'
-
-interface Range { start: Date | null; end: Date | null }
-
-function computeRange(period: Period, customFrom: string, customTo: string): Range {
-  if (period === 'all') return { start: null, end: null }
-  if (period === 'custom') {
-    return {
-      start: customFrom ? new Date(customFrom + 'T00:00:00') : null,
-      end:   customTo   ? new Date(customTo   + 'T23:59:59') : null,
-    }
-  }
-  const now = new Date()
-  const days = period === '7d' ? 7 : 30
-  const start = new Date(now)
-  start.setDate(start.getDate() - days)
-  start.setHours(0, 0, 0, 0)
-  return { start, end: null }
-}
-
-function filterByRange(tickets: any[], range: Range): any[] {
-  if (!range.start && !range.end) return tickets
-  return tickets.filter(t => {
-    const d = new Date(t.created_at)
-    if (range.start && d < range.start) return false
-    if (range.end   && d > range.end)   return false
-    return true
-  })
-}
-
-function todayStr() { return new Date().toISOString().slice(0, 10) }
+import { useTickets } from '../../hooks/useTickets'
+import { type Period, todayStr, periodToParams } from '../../lib/periodParams'
 
 function fmtDate(date: string): string {
   return new Date(date).toLocaleString('en-IN', {
@@ -60,18 +30,24 @@ function MiniCard({ ticket, linkTo }: MiniCardProps) {
     >
       <div className="px-3 py-2.5">
         <div className="flex items-start justify-between gap-2 mb-1">
-          <p className="text-xs font-bold capitalize leading-snug" style={{ color: 'var(--color-txt1)' }}>
-            {category}
-          </p>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <p className="text-xs font-bold capitalize leading-snug truncate" style={{ color: 'var(--color-txt1)' }}>
+              {category}
+            </p>
+            <span className="shrink-0 font-semibold px-1.5 py-0.5 rounded-md"
+              style={{ background: 'var(--color-bg2)', color: 'var(--color-txt3)', fontSize: 10 }}>
+              #{ticket.ticket_number}
+            </span>
+          </div>
           <span className="text-xs shrink-0" style={{ color: 'var(--color-txt3)', fontSize: 11 }}>{fmtDate(ticket.created_at)}</span>
         </div>
         {ticket.sub_category && (
           <p className="text-xs mb-1.5" style={{ color: 'var(--color-txt2)' }}>{ticket.sub_category}</p>
         )}
         <div className="flex items-center gap-1.5 flex-wrap mt-1">
-          {ticket.company && (
+          {ticket.client && (
             <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: 'var(--color-bg3)', color: 'var(--color-txt3)' }}>
-              {ticket.company.name}
+              {ticket.client.name}
             </span>
           )}
           {ticket.building && (
@@ -123,28 +99,30 @@ const PERIODS: { value: Period; label: string }[] = [
 ]
 
 interface Props {
-  open: any[]
-  inProgress: any[]
-  closed: any[]
-  isLoading: boolean
   linkPrefix: string
 }
 
-export default function KanbanBoard({ open, inProgress, closed, isLoading, linkPrefix }: Props) {
+export default function KanbanBoard({ linkPrefix }: Props) {
   const [period, setPeriod] = useState<Period>('7d')
   const [customFrom, setCustomFrom] = useState(todayStr())
   const [customTo, setCustomTo] = useState(todayStr())
   const [activeTab, setActiveTab] = useState<'open' | 'in_progress' | 'closed'>('open')
 
-  const range = useMemo(() => computeRange(period, customFrom, customTo), [period, customFrom, customTo])
+  const params = useMemo(
+    () => periodToParams(period, customFrom, customTo),
+    [period, customFrom, customTo]
+  )
+
+  const { data, isLoading } = useTickets(params as any)
+  const allTickets: any[] = data?.tickets || []
 
   const buckets: Record<string, any[]> = {
-    open:        filterByRange(open, range),
-    in_progress: filterByRange(inProgress, range),
-    closed:      filterByRange(closed, range),
+    open:        allTickets.filter((t: any) => t.status === 'open'),
+    in_progress: allTickets.filter((t: any) => t.status === 'in_progress'),
+    closed:      allTickets.filter((t: any) => t.status === 'closed'),
   }
 
-  const totalVisible = buckets.open.length + buckets.in_progress.length + buckets.closed.length
+  const totalVisible = allTickets.length
 
   return (
     <div className="pb-8">
