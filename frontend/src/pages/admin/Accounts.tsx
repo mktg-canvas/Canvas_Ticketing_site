@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Plus, X, Building2, Layers, Briefcase, UserCheck } from 'lucide-react'
-import SuperAdminNav from '../../components/shared/SuperAdminNav'
+import AdminNav from '../../components/shared/AdminNav'
 import { isAxiosError } from 'axios'
 import { useBuildings, useCreateBuilding, useUpdateBuilding, useDeactivateBuilding } from '../../hooks/useBuildings'
 import { useFloors, useCreateFloor, useUpdateFloor, useDeactivateFloor } from '../../hooks/useFloors'
@@ -157,7 +157,7 @@ export default function Accounts() {
 
   return (
     <div className="min-h-screen pb-8" style={{ background: 'var(--color-bg0)' }}>
-      <SuperAdminNav />
+      <AdminNav />
 
       {/* Add button row */}
       <div className="px-4 pb-3 max-w-2xl mx-auto flex justify-end">

@@ -148,6 +148,7 @@ export default function RaiseTicket() {
   const [subCategory, setSubCategory] = useState('')
   const [description, setDescription] = useState('')
   const [photos, setPhotos] = useState<File[]>([])
+  const [isPriority, setIsPriority] = useState(false)
 
   const { data: categories = [] } = useCategories()
   const { data: rawClients = [] } = useClients()
@@ -257,10 +258,11 @@ export default function RaiseTicket() {
       fd.append('source', source)
       if (subCategory.trim()) fd.append('subCategory', subCategory.trim())
       fd.append('description', description.trim())
+      fd.append('isPriority', String(isPriority))
       photos.forEach(f => fd.append('files', f))
 
       const ticket = await createTicket(fd)
-      navigate(role === 'super_admin' ? `/superadmin/tickets/${ticket.id}` : `/cem/tickets/${ticket.id}`)
+      navigate(role === 'super_admin' ? `/admin/tickets/${ticket.id}` : `/cem/tickets/${ticket.id}`)
     } catch (err: unknown) {
       if (isAxiosError(err)) {
         const e = err.response?.data?.error
@@ -406,6 +408,25 @@ export default function RaiseTicket() {
             </button>
           )}
         </div>
+
+        {/* Priority */}
+        <label className="flex items-center gap-3 cursor-pointer select-none rounded-xl border px-4 py-3.5"
+          style={{ background: isPriority ? 'rgba(239,68,68,0.06)' : 'var(--color-bg1)', borderColor: isPriority ? '#ef4444' : 'var(--color-bg4)' }}>
+          <input
+            type="checkbox"
+            checked={isPriority}
+            onChange={e => setIsPriority(e.target.checked)}
+            className="w-4 h-4 rounded accent-red-500 shrink-0"
+          />
+          <div className="flex flex-col gap-0.5">
+            <span className="text-sm font-semibold" style={{ color: isPriority ? '#ef4444' : 'var(--color-txt1)' }}>
+              Mark as Priority
+            </span>
+            <span className="text-xs" style={{ color: 'var(--color-txt3)' }}>
+              Flag this ticket for urgent attention
+            </span>
+          </div>
+        </label>
 
         {error && (
           <p className="text-sm rounded-xl px-4 py-3" style={{ background: 'var(--bg-danger-10)', color: 'var(--color-danger)' }}>

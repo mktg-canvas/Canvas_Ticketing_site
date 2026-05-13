@@ -12,6 +12,7 @@ const createSchema = z.object({
   description: z.string().optional(),
   status: z.enum(['open', 'in_progress', 'closed']).optional(),
   source: z.enum(['client', 'cem']).optional(),
+  isPriority: z.preprocess(v => v === 'true' || v === true, z.boolean()).optional(),
 })
 
 const editSchema = z.object({
@@ -55,6 +56,7 @@ export async function listTickets(req: AuthRequest, res: Response): Promise<void
       floorId:    req.query.floorId    as string,
       clientId:   req.query.clientId   as string,
       source:     req.query.source     as string,
+      q:          req.query.q          as string,
       page:       req.query.page ? Number(req.query.page) : 1,
       from:       req.query.from       as string,
       to:         req.query.to         as string,

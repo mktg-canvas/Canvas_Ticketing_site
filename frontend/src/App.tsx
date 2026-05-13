@@ -6,14 +6,14 @@ import Login from './pages/auth/Login'
 import ProtectedRoute from './components/shared/ProtectedRoute'
 import { useAuthStore } from './store/authStore'
 
-const CemDashboard          = lazy(() => import('./pages/cem/Dashboard'))
-const RaiseTicket           = lazy(() => import('./pages/cem/RaiseTicket'))
-const AllTickets            = lazy(() => import('./pages/cem/AllTickets'))
-const CemTicketDetail       = lazy(() => import('./pages/cem/TicketDetail'))
-const SuperAdminDashboard   = lazy(() => import('./pages/superadmin/Dashboard'))
-const SuperAdminAllTickets  = lazy(() => import('./pages/superadmin/AllTickets'))
-const Accounts              = lazy(() => import('./pages/superadmin/Accounts'))
-const Analytics             = lazy(() => import('./pages/superadmin/Analytics'))
+const CemDashboard      = lazy(() => import('./pages/cem/Dashboard'))
+const RaiseTicket       = lazy(() => import('./pages/cem/RaiseTicket'))
+const AllTickets        = lazy(() => import('./pages/cem/AllTickets'))
+const CemTicketDetail   = lazy(() => import('./pages/cem/TicketDetail'))
+const AdminDashboard    = lazy(() => import('./pages/admin/Dashboard'))
+const AdminAllTickets   = lazy(() => import('./pages/admin/AllTickets'))
+const Accounts          = lazy(() => import('./pages/admin/Accounts'))
+const Analytics         = lazy(() => import('./pages/admin/Analytics'))
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
@@ -23,7 +23,7 @@ function SmartRedirect() {
   const user = useAuthStore(s => s.user)
   if (!user) return <Navigate to="/login" replace />
   if (user.role === 'cem') return <Navigate to="/cem/dashboard" replace />
-  if (user.role === 'super_admin') return <Navigate to="/superadmin/analytics" replace />
+  if (user.role === 'super_admin') return <Navigate to="/admin/analytics" replace />
   return <Navigate to="/login" replace />
 }
 
@@ -32,9 +32,6 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const storedRefreshToken = useAuthStore.getState().refreshToken
-    // Best-effort silent refresh on app boot. We don't block UI or log the user
-    // out on failure — the cached accessToken/user from localStorage keeps them
-    // signed in, and the axios interceptor will refresh on the first 401.
     axios.post('/api/auth/refresh', storedRefreshToken ? { refreshToken: storedRefreshToken } : {}, { withCredentials: true })
       .then(({ data }) => {
         if (data.accessToken && data.user) setAuth(data.user, data.accessToken, storedRefreshToken ?? '')
@@ -54,9 +51,14 @@ function PageFallback() {
   )
 }
 
-// Legacy /fm/* paths redirect to /cem/* — old bookmarks keep working.
+// Legacy redirects — old bookmarks keep working
 function FmLegacyRedirect() {
   const path = typeof window !== 'undefined' ? window.location.pathname.replace(/^\/fm/, '/cem') : '/cem'
+  return <Navigate to={path} replace />
+}
+
+function SuperadminLegacyRedirect() {
+  const path = typeof window !== 'undefined' ? window.location.pathname.replace(/^\/superadmin/, '/admin') : '/admin'
   return <Navigate to={path} replace />
 }
 
@@ -80,14 +82,15 @@ export default function App() {
                 </ProtectedRoute>
               } />
 
-              {/* Backwards-compat: forward any /fm/* path to its /cem/* equivalent */}
+              {/* Backwards-compat: /fm/* → /cem/*, /superadmin/* → /admin/* */}
               <Route path="/fm/*" element={<FmLegacyRedirect />} />
+              <Route path="/superadmin/*" element={<SuperadminLegacyRedirect />} />
 
-              <Route path="/superadmin/*" element={
+              <Route path="/admin/*" element={
                 <ProtectedRoute allowedRoles={['super_admin']}>
                   <Routes>
-                    <Route path="dashboard" element={<SuperAdminDashboard />} />
-                    <Route path="tickets" element={<SuperAdminAllTickets />} />
+                    <Route path="dashboard" element={<AdminDashboard />} />
+                    <Route path="tickets" element={<AdminAllTickets />} />
                     <Route path="tickets/:id" element={<CemTicketDetail />} />
                     <Route path="accounts" element={<Accounts />} />
                     <Route path="analytics" element={<Analytics />} />

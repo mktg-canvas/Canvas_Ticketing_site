@@ -4,7 +4,7 @@ import {
   BarChart2, LineChart as LineChartIcon, TrendingUp, Clock, CheckCircle, Ticket,
   AlertCircle, ChevronDown, Calendar, SlidersHorizontal, X, Download, Loader2,
 } from 'lucide-react'
-import SuperAdminNav from '../../components/shared/SuperAdminNav'
+import AdminNav from '../../components/shared/AdminNav'
 import html2canvas from 'html2canvas'
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -41,10 +41,10 @@ const PRESETS: { value: DatePreset; label: string }[] = [
 ]
 
 const DIMENSIONS: { value: Dimension; label: string }[] = [
+  { value: 'byCem',      label: 'CEM' },
   { value: 'byBuilding', label: 'Building' },
   { value: 'byCategory', label: 'Issue Category' },
   { value: 'byClient',   label: 'Client' },
-  { value: 'byCem',      label: 'CEM' },
   { value: 'byMonth',    label: 'Monthly Trend' },
   { value: 'bySource',   label: 'Source' },
 ]
@@ -237,7 +237,7 @@ export default function Analytics() {
   const [preset, setPreset] = useState<DatePreset>('30d')
   const [customFrom, setCustomFrom] = useState(todayStr())
   const [customTo, setCustomTo] = useState(todayStr())
-  const [dimension, setDimension] = useState<Dimension>('byBuilding')
+  const [dimension, setDimension] = useState<Dimension>('byCem')
   const [chartType, setChartType] = useState<ChartType>('bar')
   const [showFilters, setShowFilters] = useState(false)
   const [buildingId, setBuildingId] = useState('')
@@ -325,6 +325,15 @@ export default function Analytics() {
   }, [data])
 
   const dimLabel = DIMENSIONS.find(d => d.value === dimension)?.label ?? ''
+  const DIM_NOUN: Record<string, string> = {
+    byCem:      'CEM',
+    byBuilding: 'building',
+    byCategory: 'issue category',
+    byClient:   'client',
+    byMonth:    'month',
+    bySource:   'source',
+  }
+  const dimNoun = DIM_NOUN[dimension] ?? 'item'
   const totalTickets = tableRows.reduce((s, r) => s + r.total, 0)
   const activeDateLabel = preset === 'custom'
     ? `${customFrom} → ${customTo}`
@@ -387,7 +396,7 @@ export default function Analytics() {
 
   return (
     <div className="min-h-screen pb-12" style={{ background: 'var(--color-bg0)' }}>
-      <SuperAdminNav />
+      <AdminNav />
 
       <div className="max-w-6xl mx-auto p-3 sm:p-4 flex flex-col gap-3 sm:gap-4">
 
@@ -610,7 +619,7 @@ export default function Analytics() {
               <p className="text-xs mt-0.5" style={{ color: 'var(--color-txt3)' }}>
                 {activeDateLabel}
                 {hasFilter && ' · filtered'}
-                {!isLoading && ` · ${totalTickets} tickets across ${tableRows.length} ${tableRows.length === 1 ? 'item' : 'items'}`}
+                {!isLoading && ` · ${totalTickets} tickets across ${tableRows.length} ${tableRows.length === 1 ? dimNoun : dimNoun + 's'}`}
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0">

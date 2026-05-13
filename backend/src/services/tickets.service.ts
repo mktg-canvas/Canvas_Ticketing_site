@@ -14,6 +14,7 @@ export async function createTicket(
     description?: string
     status?: string
     source?: string
+    isPriority?: boolean
     files?: Express.Multer.File[]
   }
 ) {
@@ -28,6 +29,7 @@ export async function createTicket(
       description: data.description ?? '',
       status: (data.status as TicketStatus) ?? 'open',
       source: (data.source as TicketSource) ?? 'client',
+      is_priority: data.isPriority ?? false,
       opened_at: (!data.status || data.status === 'open') ? new Date() : undefined,
       in_progress_at: data.status === 'in_progress' ? new Date() : undefined,
       closed_at: data.status === 'closed' ? new Date() : undefined,
@@ -73,6 +75,7 @@ export async function listTickets(
     floorId?: string
     clientId?: string
     source?: string
+    q?: string
     page?: number
     from?: string
     to?: string
@@ -103,6 +106,11 @@ export async function listTickets(
     }
   }
 
+  if (filters.q) {
+    const asNum = parseInt(filters.q.trim(), 10)
+    where.ticket_number = isNaN(asNum) ? -1 : asNum
+  }
+
   const findArgs: Prisma.TicketFindManyArgs = {
     where,
     include: {
@@ -116,7 +124,9 @@ export async function listTickets(
     orderBy: { created_at: 'desc' },
   }
 
-  if (filters.noPaginate) {
+  if (filters.q) {
+    findArgs.take = 20
+  } else if (filters.noPaginate) {
     findArgs.take = 2000
   } else {
     findArgs.take = take

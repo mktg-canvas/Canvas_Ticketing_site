@@ -54,6 +54,7 @@ export interface Ticket {
   description: string
   status: 'open' | 'in_progress' | 'closed'
   source: 'client' | 'cem'
+  is_priority: boolean
   raised_by: string
   opened_at?: string
   in_progress_at?: string

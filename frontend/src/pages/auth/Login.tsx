@@ -26,7 +26,7 @@ export default function Login() {
       const res = await api.post('/auth/login', data)
       const { accessToken, refreshToken, user } = res.data
       setAuth(user, accessToken, refreshToken)
-      const routes: Record<Role, string> = { cem: '/cem/dashboard', super_admin: '/superadmin/analytics' }
+      const routes: Record<Role, string> = { cem: '/cem/dashboard', super_admin: '/admin/analytics' }
       navigate(routes[user.role as Role])
     } catch (err: unknown) {
       setError(isAxiosError(err) ? err.response?.data?.error || 'Login failed.' : 'Login failed.')
