@@ -43,11 +43,11 @@ export function useEditTicket() {
       id: string
       buildingId?: string
       floorId?: string
-      companyId?: string
+      clientId?: string
       categoryId?: string
       subCategory?: string
       description?: string
-      source?: 'client' | 'fm'
+      source?: 'client' | 'cem'
     }) => {
       const { data: res } = await api.patch(`/tickets/${id}`, data)
       return res.ticket

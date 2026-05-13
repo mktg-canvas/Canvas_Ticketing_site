@@ -8,8 +8,8 @@ const locationInclude = {
   orderBy: [{ building: { name: 'asc' as const } }, { floor: { name: 'asc' as const } }],
 }
 
-export async function listCompanies() {
-  return prisma.company.findMany({
+export async function listClients() {
+  return prisma.client.findMany({
     where: { is_active: true },
     include: {
       locations: locationInclude,
@@ -19,8 +19,8 @@ export async function listCompanies() {
   })
 }
 
-export async function createCompany(name: string) {
-  return prisma.company.create({
+export async function createClient(name: string) {
+  return prisma.client.create({
     data: { name },
     include: {
       locations: locationInclude,
@@ -29,8 +29,8 @@ export async function createCompany(name: string) {
   })
 }
 
-export async function updateCompany(id: string, name: string) {
-  return prisma.company.update({
+export async function updateClient(id: string, name: string) {
+  return prisma.client.update({
     where: { id },
     data: { name },
     include: {
@@ -40,13 +40,13 @@ export async function updateCompany(id: string, name: string) {
   })
 }
 
-export async function deactivateCompany(id: string) {
-  return prisma.company.update({ where: { id }, data: { is_active: false } })
+export async function deactivateClient(id: string) {
+  return prisma.client.update({ where: { id }, data: { is_active: false } })
 }
 
-export async function addCompanyLocation(companyId: string, buildingId: string, floorId: string) {
-  return prisma.companyLocation.create({
-    data: { company_id: companyId, building_id: buildingId, floor_id: floorId },
+export async function addClientLocation(clientId: string, buildingId: string, floorId: string) {
+  return prisma.clientLocation.create({
+    data: { client_id: clientId, building_id: buildingId, floor_id: floorId },
     include: {
       building: { select: { id: true, name: true } },
       floor: { select: { id: true, name: true } },
@@ -54,6 +54,6 @@ export async function addCompanyLocation(companyId: string, buildingId: string, 
   })
 }
 
-export async function removeCompanyLocation(locationId: string) {
-  return prisma.companyLocation.delete({ where: { id: locationId } })
+export async function removeClientLocation(locationId: string) {
+  return prisma.clientLocation.delete({ where: { id: locationId } })
 }

@@ -41,26 +41,26 @@ function row(label: string, value: string) {
   return `<tr><td style="padding:6px 0;font-size:13px;color:#8b92a5;width:140px">${label}</td><td style="padding:6px 0;font-size:13px;color:#e8eaf0">${value}</td></tr>`
 }
 
-export async function sendTicketCreated(to: string, fmName: string, t: {
-  ticket_number: string
+export async function sendTicketCreated(to: string, cemName: string, t: {
+  ticket_number: number
   building: string
   floor: string
-  company: string
+  client: string
   category: string
   created_at: string
 }) {
   const html = wrap(`
     <h2 style="margin:0 0 8px;font-size:16px;color:#e8eaf0">Ticket Raised</h2>
-    <p style="font-size:14px;color:#8b92a5;margin:0 0 20px">Hi ${fmName}, your ticket has been submitted.</p>
+    <p style="font-size:14px;color:#8b92a5;margin:0 0 20px">Hi ${cemName}, your ticket has been submitted.</p>
     <table style="width:100%;border-collapse:collapse">
       ${row('Ticket', `<strong style="color:#4f8ef7">${t.ticket_number}</strong>`)}
       ${row('Building', t.building)}
       ${row('Floor', t.floor)}
-      ${row('Company', t.company)}
+      ${row('Client', t.client)}
       ${row('Category', t.category.charAt(0).toUpperCase() + t.category.slice(1))}
       ${row('Raised On', new Date(t.created_at).toLocaleString('en-IN'))}
     </table>
-    <a href="${process.env.CLIENT_URL}/fm/tickets" style="display:inline-block;margin-top:20px;background:#4f8ef7;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600">View ticket →</a>
+    <a href="${process.env.CLIENT_URL}/cem/tickets" style="display:inline-block;margin-top:20px;background:#4f8ef7;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600">View ticket →</a>
   `)
   await send(to, `[${t.ticket_number}] Ticket raised`, html)
 }

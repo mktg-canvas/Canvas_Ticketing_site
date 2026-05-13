@@ -7,7 +7,7 @@ datasource db {
 }
 
 enum Role {
-  fm
+  cem
   super_admin
 }
 
@@ -19,7 +19,7 @@ enum TicketStatus {
 
 enum TicketSource {
   client
-  fm
+  cem
 }
 
 enum ActivityType {
@@ -53,7 +53,7 @@ model Building {
 
   floors    Floor[]
   tickets   Ticket[]
-  locations CompanyLocation[]
+  locations ClientLocation[]
 
   @@map("buildings")
 }
@@ -68,12 +68,12 @@ model Floor {
 
   building  Building          @relation(fields: [building_id], references: [id], onDelete: Cascade)
   tickets   Ticket[]
-  locations CompanyLocation[]
+  locations ClientLocation[]
 
   @@map("floors")
 }
 
-model Company {
+model Client {
   id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name       String   @db.VarChar(255)
   is_active  Boolean  @default(true)
@@ -81,24 +81,24 @@ model Company {
   updated_at DateTime @updatedAt @db.Timestamptz
 
   tickets   Ticket[]
-  locations CompanyLocation[]
+  locations ClientLocation[]
 
-  @@map("companies")
+  @@map("clients")
 }
 
-model CompanyLocation {
+model ClientLocation {
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  company_id  String   @db.Uuid
+  client_id   String   @db.Uuid
   building_id String   @db.Uuid
   floor_id    String   @db.Uuid
   created_at  DateTime @default(now()) @db.Timestamptz
 
-  company  Company  @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  client   Client   @relation(fields: [client_id], references: [id], onDelete: Cascade)
   building Building @relation(fields: [building_id], references: [id], onDelete: Cascade)
   floor    Floor    @relation(fields: [floor_id], references: [id], onDelete: Cascade)
 
-  @@unique([company_id, building_id, floor_id])
-  @@map("company_locations")
+  @@unique([client_id, building_id, floor_id])
+  @@map("client_locations")
 }
 
 model User {
@@ -106,7 +106,7 @@ model User {
   name          String    @db.VarChar(255)
   email         String    @unique @db.VarChar(255)
   password_hash String
-  role          Role      @default(fm)
+  role          Role      @default(cem)
   is_active     Boolean   @default(true)
   last_login    DateTime? @db.Timestamptz
   created_at    DateTime  @default(now()) @db.Timestamptz
@@ -121,10 +121,10 @@ model User {
 
 model Ticket {
   id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  ticket_number String         @unique @db.VarChar(20)
+  ticket_number Int            @unique @default(autoincrement())
   building_id   String         @db.Uuid
   floor_id      String         @db.Uuid
-  company_id    String         @db.Uuid
+  client_id     String         @db.Uuid
   category_id   String         @db.Uuid
   sub_category  String?        @db.VarChar(255)
   description   String
@@ -139,7 +139,7 @@ model Ticket {
 
   building    Building         @relation(fields: [building_id], references: [id])
   floor       Floor            @relation(fields: [floor_id], references: [id])
-  company     Company          @relation(fields: [company_id], references: [id])
+  client      Client           @relation(fields: [client_id], references: [id])
   category    Category         @relation(fields: [category_id], references: [id])
   raiser      User             @relation(fields: [raised_by], references: [id])
   activities  TicketActivity[]

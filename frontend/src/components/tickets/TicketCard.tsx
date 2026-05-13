@@ -52,13 +52,17 @@ export default function TicketCard({ ticket, linkTo, deleteError }: Props) {
       }}
     >
       <div className="px-4 py-3.5">
-        {/* Category + time */}
+        {/* Category + ticket number + time */}
         <div className="flex items-start justify-between gap-3 mb-1.5">
           <div className="flex items-center gap-2 min-w-0">
             <span className="w-2 h-2 rounded-full shrink-0" style={{ background: dotColor }} />
             <p className="text-sm font-bold capitalize leading-snug" style={{ color: 'var(--color-txt1)' }}>
               {category}
             </p>
+            <span className="text-xs font-semibold px-1.5 py-0.5 rounded-md shrink-0"
+              style={{ background: 'var(--color-bg3)', color: 'var(--color-txt3)' }}>
+              #{ticket.ticket_number}
+            </span>
           </div>
           <span className="text-xs shrink-0 mt-0.5" style={{ color: 'var(--color-txt3)' }}>
             {fmtDate(ticket.created_at)}
@@ -72,14 +76,14 @@ export default function TicketCard({ ticket, linkTo, deleteError }: Props) {
           </p>
         )}
 
-        {/* Company + Building + Source */}
+        {/* Client + Building + Source */}
         <div className="flex items-center gap-2 flex-wrap ml-4" style={{ marginTop: ticket.sub_category ? 0 : 8 }}>
-          {ticket.company && (
+          {ticket.client && (
             <span
               className="text-xs px-2.5 py-1 rounded-lg font-medium"
               style={{ background: 'var(--color-bg3)', color: 'var(--color-txt2)' }}
             >
-              {ticket.company.name}
+              {ticket.client.name}
             </span>
           )}
           {ticket.building && (
@@ -92,12 +96,12 @@ export default function TicketCard({ ticket, linkTo, deleteError }: Props) {
           )}
           <span
             className="text-xs px-2.5 py-1 rounded-lg font-semibold"
-            style={ticket.source === 'fm'
+            style={ticket.source === 'cem'
               ? { background: 'var(--bg-accent-15)', color: 'var(--color-accent)' }
               : { background: 'var(--bg-warning-15)', color: 'var(--color-warning)' }
             }
           >
-            {ticket.source === 'fm' ? 'FM Observed' : 'Client Reported'}
+            {ticket.source === 'cem' ? 'CEM Observed' : 'Client Reported'}
           </span>
         </div>
 

@@ -24,14 +24,14 @@ export default function AllTickets() {
       <div className="sticky top-0 z-10 border-b" style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}>
         <div className="px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate('/fm/dashboard')}><ArrowLeft size={20} style={{ color: 'var(--color-txt2)' }} /></button>
+            <button onClick={() => navigate('/cem/dashboard')}><ArrowLeft size={20} style={{ color: 'var(--color-txt2)' }} /></button>
             <h1 className="text-sm font-semibold" style={{ color: 'var(--color-txt1)' }}>My Tickets</h1>
             <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: 'var(--color-bg3)', color: 'var(--color-txt3)' }}>
               {data?.total ?? 0}
             </span>
           </div>
           <button
-            onClick={() => navigate('/fm/raise-ticket')}
+            onClick={() => navigate('/cem/raise-ticket')}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold"
             style={{ background: 'var(--color-accent)', color: '#fff' }}
           >
@@ -81,14 +81,14 @@ export default function AllTickets() {
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            {tickets.map((t: any) => <TicketCard key={t.id} ticket={t} linkTo={`/fm/tickets/${t.id}`} />)}
+            {tickets.map((t: any) => <TicketCard key={t.id} ticket={t} linkTo={`/cem/tickets/${t.id}`} />)}
           </div>
         )}
       </div>
 
       {/* FAB */}
       <button
-        onClick={() => navigate('/fm/raise-ticket')}
+        onClick={() => navigate('/cem/raise-ticket')}
         className="fixed bottom-6 right-5 w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-opacity hover:opacity-90"
         style={{ background: 'var(--color-accent)', color: '#fff', boxShadow: '0 4px 20px rgba(85,46,158,0.4)' }}
       >
