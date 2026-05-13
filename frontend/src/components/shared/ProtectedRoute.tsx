@@ -8,10 +8,16 @@ interface Props {
 }
 
 export default function ProtectedRoute({ children, allowedRoles }: Props) {
-  const user = useAuthStore((s) => s.user)
+  const user    = useAuthStore((s) => s.user)
+  const logout  = useAuthStore((s) => s.logout)
 
   if (!user) return <Navigate to="/login" replace />
-  if (allowedRoles && !allowedRoles.includes(user.role)) return <Navigate to="/login" replace />
+
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    // Role in localStorage is stale (e.g. old 'fm' session) — clear it and re-login
+    logout()
+    return <Navigate to="/login" replace />
+  }
 
   return <>{children}</>
 }
