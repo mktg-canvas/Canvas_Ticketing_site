@@ -20,6 +20,12 @@ interface DimRow {
   total: number
   client_total: number
   cem_total: number
+  open_client: number
+  in_progress_client: number
+  closed_client: number
+  open_cem: number
+  in_progress_cem: number
+  closed_cem: number
 }
 
 interface MonthRow {
@@ -30,6 +36,12 @@ interface MonthRow {
   total: number
   client_total: number
   cem_total: number
+  open_client: number
+  in_progress_client: number
+  closed_client: number
+  open_cem: number
+  in_progress_cem: number
+  closed_cem: number
 }
 
 function buildWhere(f: AnalyticsFilters): Prisma.TicketWhereInput {
@@ -51,26 +63,37 @@ function buildWhere(f: AnalyticsFilters): Prisma.TicketWhereInput {
 async function groupByField(
   field: 'building_id' | 'category_id' | 'client_id' | 'raised_by' | 'floor_id',
   where: Prisma.TicketWhereInput
-): Promise<Map<string, { open: number; in_progress: number; closed: number; total: number; client_total: number; cem_total: number }>> {
+): Promise<Map<string, Omit<DimRow, 'id' | 'name'>>> {
   const rows = await prisma.ticket.groupBy({
     by: [field, 'status', 'source'] as any,
     where,
     _count: { id: true },
   })
 
-  const map = new Map<string, { open: number; in_progress: number; closed: number; total: number; client_total: number; cem_total: number }>()
+  const zero = () => ({ open: 0, in_progress: 0, closed: 0, total: 0, client_total: 0, cem_total: 0, open_client: 0, in_progress_client: 0, closed_client: 0, open_cem: 0, in_progress_cem: 0, closed_cem: 0 })
+  const map = new Map<string, ReturnType<typeof zero>>()
   for (const r of rows) {
     const key = (r as any)[field] as string
-    if (!map.has(key)) map.set(key, { open: 0, in_progress: 0, closed: 0, total: 0, client_total: 0, cem_total: 0 })
+    if (!map.has(key)) map.set(key, zero())
     const entry = map.get(key)!
     const status = (r as any).status as string
     const source = (r as any).source as string
-    if (status === 'open') entry.open += r._count.id
-    else if (status === 'in_progress') entry.in_progress += r._count.id
-    else if (status === 'closed') entry.closed += r._count.id
-    entry.total += r._count.id
-    if (source === 'client') entry.client_total += r._count.id
-    else if (source === 'cem') entry.cem_total += r._count.id
+    const n = r._count.id
+    if (status === 'open') entry.open += n
+    else if (status === 'in_progress') entry.in_progress += n
+    else if (status === 'closed') entry.closed += n
+    entry.total += n
+    if (source === 'client') {
+      entry.client_total += n
+      if (status === 'open') entry.open_client += n
+      else if (status === 'in_progress') entry.in_progress_client += n
+      else if (status === 'closed') entry.closed_client += n
+    } else if (source === 'cem') {
+      entry.cem_total += n
+      if (status === 'open') entry.open_cem += n
+      else if (status === 'in_progress') entry.in_progress_cem += n
+      else if (status === 'closed') entry.closed_cem += n
+    }
   }
   return map
 }
@@ -164,17 +187,28 @@ export async function getAnalytics(filters: AnalyticsFilters) {
     .sort((a, b) => b.total - a.total)
 
   // Monthly trends
+  const zeroMonth = (): MonthRow => ({ month: '', open: 0, in_progress: 0, closed: 0, total: 0, client_total: 0, cem_total: 0, open_client: 0, in_progress_client: 0, closed_client: 0, open_cem: 0, in_progress_cem: 0, closed_cem: 0 })
   const monthMap = new Map<string, MonthRow>()
   for (const r of monthlyRaw) {
     const key = new Date(r.month).toISOString().slice(0, 7) // "YYYY-MM"
-    if (!monthMap.has(key)) monthMap.set(key, { month: key, open: 0, in_progress: 0, closed: 0, total: 0, client_total: 0, cem_total: 0 })
+    if (!monthMap.has(key)) { const z = zeroMonth(); z.month = key; monthMap.set(key, z) }
     const entry = monthMap.get(key)!
-    if (r.status === 'open') entry.open += r.count
-    else if (r.status === 'in_progress') entry.in_progress += r.count
-    else if (r.status === 'closed') entry.closed += r.count
-    entry.total += r.count
-    if (r.source === 'client') entry.client_total += r.count
-    else if (r.source === 'cem') entry.cem_total += r.count
+    const n = r.count
+    if (r.status === 'open') entry.open += n
+    else if (r.status === 'in_progress') entry.in_progress += n
+    else if (r.status === 'closed') entry.closed += n
+    entry.total += n
+    if (r.source === 'client') {
+      entry.client_total += n
+      if (r.status === 'open') entry.open_client += n
+      else if (r.status === 'in_progress') entry.in_progress_client += n
+      else if (r.status === 'closed') entry.closed_client += n
+    } else if (r.source === 'cem') {
+      entry.cem_total += n
+      if (r.status === 'open') entry.open_cem += n
+      else if (r.status === 'in_progress') entry.in_progress_cem += n
+      else if (r.status === 'closed') entry.closed_cem += n
+    }
   }
   const byMonth = Array.from(monthMap.values())
 
@@ -197,6 +231,12 @@ export async function getAnalytics(filters: AnalyticsFilters) {
     ...counts,
     client_total: id === 'client' ? counts.total : 0,
     cem_total:    id === 'cem'    ? counts.total : 0,
+    open_client:          id === 'client' ? counts.open : 0,
+    in_progress_client:   id === 'client' ? counts.in_progress : 0,
+    closed_client:        id === 'client' ? counts.closed : 0,
+    open_cem:             id === 'cem'    ? counts.open : 0,
+    in_progress_cem:      id === 'cem'    ? counts.in_progress : 0,
+    closed_cem:           id === 'cem'    ? counts.closed : 0,
   }))
 
   return {
