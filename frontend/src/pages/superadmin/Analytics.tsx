@@ -736,9 +736,9 @@ export default function Analytics() {
                   <YAxis tick={{ fontSize: 11, fill: COLORS.axisTxt }} tickLine={false} axisLine={false} allowDecimals={false} />
                   <Tooltip content={<ChartTooltip />} />
                   <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} iconType="line" iconSize={14} formatter={(v) => <span style={{ color: 'var(--color-txt2)' }}>{v}</span>} />
-                  <Line type="monotone" dataKey="Open"        stroke={COLORS.open}   strokeWidth={2.2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
-                  <Line type="monotone" dataKey="In Progress" stroke={COLORS.inProg} strokeWidth={2.2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
-                  <Line type="monotone" dataKey="Closed"      stroke={COLORS.closed} strokeWidth={2.2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                  <Line type="linear" dataKey="Open"        stroke={COLORS.open}   strokeWidth={2.2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                  <Line type="linear" dataKey="In Progress" stroke={COLORS.inProg} strokeWidth={2.2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                  <Line type="linear" dataKey="Closed"      stroke={COLORS.closed} strokeWidth={2.2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
                 </LineChart>
               </ResponsiveContainer>
             ) : (
@@ -773,7 +773,7 @@ export default function Analytics() {
                         <Tooltip content={<ChartTooltip />} />
                         <Legend wrapperStyle={{ fontSize: 10, paddingTop: 6 }} iconType="line" iconSize={12} formatter={(v) => <span style={{ color: 'var(--color-txt2)' }}>{v}</span>} />
                         {panel.lines.map(l => (
-                          <Line key={l.key} type="monotone" dataKey={l.key} stroke={l.color} strokeWidth={2} dot={{ r: 2.5 }} activeDot={{ r: 4 }} />
+                          <Line key={l.key} type="linear" dataKey={l.key} stroke={l.color} strokeWidth={2} dot={{ r: 2.5 }} activeDot={{ r: 4 }} />
                         ))}
                       </LineChart>
                     </ResponsiveContainer>
