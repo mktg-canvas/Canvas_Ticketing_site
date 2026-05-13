@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Ticket, Clock, CheckCircle, Calendar } from 'lucide-react'
+import { Ticket, Clock, CheckCircle, Calendar, ArrowUpDown } from 'lucide-react'
 import { useTickets } from '../../hooks/useTickets'
 import { type Period, todayStr, periodToParams } from '../../lib/periodParams'
 
@@ -150,6 +150,7 @@ export default function KanbanBoard({ linkPrefix }: Props) {
   const [customFrom, setCustomFrom] = useState(todayStr())
   const [customTo, setCustomTo] = useState(todayStr())
   const [activeTab, setActiveTab] = useState<'open' | 'in_progress' | 'closed'>('open')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
 
   const params = useMemo(
     () => periodToParams(period, customFrom, customTo),
@@ -157,7 +158,13 @@ export default function KanbanBoard({ linkPrefix }: Props) {
   )
 
   const { data, isLoading } = useTickets(params)
-  const allTickets: any[] = data?.tickets || []
+  const allTickets: any[] = useMemo(() => {
+    const tickets: any[] = data?.tickets || []
+    return [...tickets].sort((a, b) => {
+      const diff = new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      return sortOrder === 'asc' ? diff : -diff
+    })
+  }, [data, sortOrder])
 
   const buckets: Record<string, any[]> = {
     open:        allTickets.filter((t: any) => t.status === 'open'),
@@ -173,6 +180,15 @@ export default function KanbanBoard({ linkPrefix }: Props) {
       {/* Top bar: period filter + count */}
       <div className="flex items-center justify-between px-4 pt-3 pb-2 gap-3 flex-wrap">
         <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setSortOrder(o => o === 'asc' ? 'desc' : 'asc')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border"
+            style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)', color: 'var(--color-txt2)' }}
+            title={sortOrder === 'asc' ? 'Oldest first (FIFO)' : 'Newest first'}
+          >
+            <ArrowUpDown size={12} />
+            {sortOrder === 'asc' ? 'Oldest first' : 'Newest first'}
+          </button>
           <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: 'var(--color-bg1)', border: '1px solid var(--color-bg4)' }}>
             {PERIODS.map(p => (
               <button

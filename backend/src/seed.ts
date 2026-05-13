@@ -5,7 +5,7 @@ import { prisma } from './lib/prisma'
 async function main() {
   const email = process.argv[2] || 'admin@canvas.com'
   const password = process.argv[3] || 'Admin@123'
-  const name = process.argv[4] || 'Super Admin'
+  const name = process.argv[4] || 'Admin'
 
   const hash = await bcrypt.hash(password, 12)
   const existing = await prisma.user.findUnique({ where: { email } })

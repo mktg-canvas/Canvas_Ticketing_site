@@ -4,7 +4,7 @@ import { useTickets } from '../../hooks/useTickets'
 import { useBuildings } from '../../hooks/useBuildings'
 import { useClients } from '../../hooks/useClients'
 import TicketCard from '../../components/tickets/TicketCard'
-import SuperAdminNav from '../../components/shared/SuperAdminNav'
+import AdminNav from '../../components/shared/AdminNav'
 import { type Period, todayStr, periodToParams } from '../../lib/periodParams'
 
 const STATUSES = [
@@ -76,7 +76,7 @@ export default function SuperAdminAllTickets() {
 
   return (
     <div className="min-h-screen pb-8" style={{ background: 'var(--color-bg0)' }}>
-      <SuperAdminNav />
+      <AdminNav />
 
       {/* Sub-header: title + status tabs */}
       <div className="sticky top-[72px] sm:top-[80px] z-10 border-b" style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}>
@@ -174,7 +174,7 @@ export default function SuperAdminAllTickets() {
               <TicketCard
                 key={t.id}
                 ticket={t}
-                linkTo={`/superadmin/tickets/${t.id}`}
+                linkTo={`/admin/tickets/${t.id}`}
               />
             ))}
           </div>

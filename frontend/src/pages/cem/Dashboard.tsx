@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import ProfileMenu from '../../components/shared/ProfileMenu'
 import KanbanBoard from '../../components/shared/KanbanBoard'
+import GlobalSearch from '../../components/shared/GlobalSearch'
 
 export default function CemDashboard() {
   const navigate = useNavigate()
@@ -32,6 +33,7 @@ export default function CemDashboard() {
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-2">
+          <GlobalSearch />
           <button
             aria-label="Raise ticket"
             onClick={() => navigate('/cem/raise-ticket')}

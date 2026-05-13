@@ -2,8 +2,9 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { Settings, Ticket, BarChart2, Plus, Columns2 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import ProfileMenu from './ProfileMenu'
+import GlobalSearch from './GlobalSearch'
 
-export default function SuperAdminNav() {
+export default function AdminNav() {
   const navigate  = useNavigate()
   const location  = useLocation()
   const user      = useAuthStore(s => s.user)
@@ -47,18 +48,19 @@ export default function SuperAdminNav() {
           <img src="/logo.png" alt="Canvas" className="h-7 sm:h-8 w-auto object-contain shrink-0" />
           <div className="hidden sm:block w-px h-6" style={{ background: 'var(--color-bg4)' }} />
           <div className="hidden sm:block min-w-0">
-            <p className="text-sm font-bold leading-tight truncate" style={{ color: 'var(--color-txt1)' }}>Super Admin</p>
+            <p className="text-sm font-bold leading-tight truncate" style={{ color: 'var(--color-txt1)' }}>Admin</p>
             <p className="text-[11px] truncate" style={{ color: 'var(--color-txt3)' }}>{user?.name}</p>
           </div>
         </div>
 
         {/* Right: actions + profile */}
         <div className="flex items-center gap-1 sm:gap-1.5">
-          {navBtn('Analytics',    <BarChart2 size={15} />,  '/superadmin/analytics',    path === '/superadmin/analytics')}
-          {navBtn('Live Status',  <Columns2 size={15} />,   '/superadmin/dashboard',    path === '/superadmin/dashboard')}
-          {navBtn('Manage',       <Settings size={15} />,   '/superadmin/accounts',     path === '/superadmin/accounts')}
-          {navBtn('Tickets',      <Ticket size={15} />,     '/superadmin/tickets',      path === '/superadmin/tickets')}
-          {navBtn('Raise Ticket', <Plus size={15} />,       '/superadmin/raise-ticket', path === '/superadmin/raise-ticket')}
+          <GlobalSearch />
+          {navBtn('Analytics',    <BarChart2 size={15} />,  '/admin/analytics',    path === '/admin/analytics')}
+          {navBtn('Live Status',  <Columns2 size={15} />,   '/admin/dashboard',    path === '/admin/dashboard')}
+          {navBtn('Manage',       <Settings size={15} />,   '/admin/accounts',     path === '/admin/accounts')}
+          {navBtn('Tickets',      <Ticket size={15} />,     '/admin/tickets',      path === '/admin/tickets')}
+          {navBtn('Raise Ticket', <Plus size={15} />,       '/admin/raise-ticket', path === '/admin/raise-ticket')}
           <ProfileMenu />
         </div>
       </header>
