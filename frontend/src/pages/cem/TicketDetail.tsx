@@ -1,7 +1,7 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Building2, Layers, Briefcase, User, Clock, FileText, Image as ImageIcon, CheckCircle, MapPin, Pencil, Trash2, ChevronDown, Camera, Plus } from 'lucide-react'
-import { useTicket, useUpdateStatus, useEditTicket, useDeleteTicket, useUploadAttachment } from '../../hooks/useTickets'
+import { ArrowLeft, Building2, Layers, Briefcase, User, Clock, FileText, Image as ImageIcon, CheckCircle, MapPin, Pencil, Trash2, ChevronDown, Camera, Plus, AlertTriangle, NotebookPen } from 'lucide-react'
+import { useTicket, useUpdateStatus, useEditTicket, useDeleteTicket, useUploadAttachment, useUpdateStageNote } from '../../hooks/useTickets'
 import { useBuildings } from '../../hooks/useBuildings'
 import { useFloors } from '../../hooks/useFloors'
 import { useClients } from '../../hooks/useClients'
@@ -23,6 +23,19 @@ function fmt(d?: string | null) {
     day: '2-digit', month: 'short', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   })
+}
+
+function fmtElapsed(ms: number): string {
+  const totalMins = Math.floor(ms / 60_000)
+  const hours = Math.floor(totalMins / 60)
+  const mins = totalMins % 60
+  if (hours >= 48) {
+    const days = Math.floor(hours / 24)
+    const remH = hours % 24
+    return remH > 0 ? `${days}d ${remH}h` : `${days}d`
+  }
+  if (hours >= 1) return `${hours}h ${mins}m`
+  return `${mins}m`
 }
 
 function EditSelect({ label, value, onChange, children }: {
@@ -59,13 +72,33 @@ export default function CemTicketDetail() {
   const user = useAuthStore(s => s.user)
   const isAdmin = user?.role === 'super_admin'
 
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 60_000)
+    return () => clearInterval(t)
+  }, [])
+
   const { data: ticket, isLoading } = useTicket(id!)
   const { mutateAsync: updateStatus, isPending: updatingStatus } = useUpdateStatus()
   const { mutateAsync: editTicket, isPending: editing } = useEditTicket()
   const { mutateAsync: deleteTicket, isPending: deleting } = useDeleteTicket()
   const { mutateAsync: uploadAttachment, isPending: uploading } = useUploadAttachment()
+  const { mutateAsync: saveStageNote, isPending: savingNote } = useUpdateStageNote()
   const stageFileRef = useRef<HTMLInputElement>(null)
   const [uploadingStage, setUploadingStage] = useState<string | null>(null)
+  const [editingNoteStage, setEditingNoteStage] = useState<string | null>(null)
+  const [noteText, setNoteText] = useState('')
+
+  function openNoteEdit(stage: string, current: string | null | undefined) {
+    setNoteText(current ?? '')
+    setEditingNoteStage(stage)
+  }
+
+  async function handleSaveNote() {
+    if (!editingNoteStage) return
+    await saveStageNote({ id: id!, stage: editingNoteStage, note: noteText })
+    setEditingNoteStage(null)
+  }
 
   const { data: buildings = [] } = useBuildings()
   const [editBuildingId, setEditBuildingId] = useState('')
@@ -170,6 +203,12 @@ export default function CemTicketDetail() {
     { key: 'closed',      ts: ticket.closed_at },
   ] as const
 
+  const statusRef = ticket.status === 'open' ? ticket.opened_at
+    : ticket.status === 'in_progress' ? ticket.in_progress_at
+    : null
+  const elapsedMs = statusRef ? Math.max(0, now - new Date(statusRef).getTime()) : 0
+  const isOverdue = ticket.status === 'open' && elapsedMs > 24 * 3_600_000
+
   return (
     <div className="min-h-screen pb-10" style={{ background: 'var(--color-bg0)' }}>
 
@@ -256,7 +295,7 @@ export default function CemTicketDetail() {
               { icon: Layers,    label: 'Floor',       value: ticket.floor?.name },
               { icon: Briefcase, label: 'Client',      value: ticket.client?.name },
               { icon: User,      label: 'Raised by',   value: (ticket as any).raiser?.name },
-            ].filter(d => d.value).map(({ icon: Icon, label, value }) => (
+            ].filter(d => d.value).filter(d => isAdmin || d.label !== 'Raised by').map(({ icon: Icon, label, value }) => (
               <div key={label} className="rounded-xl p-3.5 border" style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}>
                 <div className="flex items-center gap-2 mb-1">
                   <Icon size={13} style={{ color: 'var(--color-txt3)' }} />
@@ -265,6 +304,24 @@ export default function CemTicketDetail() {
                 <p className="text-sm font-semibold break-words" style={{ color: 'var(--color-txt1)' }}>{value}</p>
               </div>
             ))}
+            {/* Timer card — CEM only, beside Client */}
+            {!isAdmin && statusRef && (
+              <div className="rounded-xl p-3.5 border" style={{
+                background: isOverdue ? 'rgba(239,68,68,0.06)' : 'var(--color-bg1)',
+                borderColor: isOverdue ? 'var(--color-danger)' : 'var(--color-bg4)',
+              }}>
+                <div className="flex items-center gap-2 mb-1">
+                  <Clock size={13} style={{ color: isOverdue ? 'var(--color-danger)' : 'var(--color-txt3)' }} />
+                  <p className="text-xs" style={{ color: isOverdue ? 'var(--color-danger)' : 'var(--color-txt3)' }}>
+                    {ticket.status === 'open' ? 'Open for' : 'In progress for'}
+                  </p>
+                  {isOverdue && <AlertTriangle size={12} style={{ color: 'var(--color-danger)', marginLeft: 'auto' }} />}
+                </div>
+                <p className="text-sm font-semibold" style={{ color: isOverdue ? 'var(--color-danger)' : 'var(--color-txt1)' }}>
+                  {fmtElapsed(elapsedMs)}
+                </p>
+              </div>
+            )}
           </div>
           <div className="mt-2 rounded-xl p-3.5 border flex items-center gap-3" style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}>
             <Clock size={13} style={{ color: 'var(--color-txt3)' }} />
@@ -385,6 +442,74 @@ export default function CemTicketDetail() {
                         <Camera size={14} /> Add {meta.label} photos
                       </button>
                     )}
+
+                    {/* Stage Note */}
+                    {(() => {
+                      const noteKey = step.key === 'open' ? 'open_note' : step.key === 'in_progress' ? 'in_progress_note' : 'closed_note'
+                      const stageNote: string | null | undefined = (ticket as any)[noteKey]
+                      const isEditingThis = editingNoteStage === step.key
+                      if (isEditingThis) {
+                        return (
+                          <div className="mt-2 flex flex-col gap-2">
+                            <textarea
+                              value={noteText}
+                              onChange={e => setNoteText(e.target.value)}
+                              placeholder="Add a note for this stage…"
+                              rows={3}
+                              autoFocus
+                              className="w-full rounded-xl px-3 py-2.5 text-sm outline-none border resize-none"
+                              style={{
+                                background: 'var(--color-bg2)',
+                                borderColor: 'var(--color-accent)',
+                                color: 'var(--color-txt1)',
+                                fontSize: 14,
+                              }}
+                            />
+                            <div className="flex gap-2">
+                              <button
+                                onClick={handleSaveNote}
+                                disabled={savingNote}
+                                className="px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50"
+                                style={{ background: 'var(--color-accent)', color: '#fff' }}
+                              >
+                                {savingNote ? 'Saving…' : 'Save'}
+                              </button>
+                              <button
+                                onClick={() => setEditingNoteStage(null)}
+                                className="px-3 py-1.5 rounded-lg text-xs font-semibold"
+                                style={{ background: 'var(--color-bg3)', color: 'var(--color-txt2)' }}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )
+                      }
+                      if (stageNote) {
+                        return (
+                          <div className="mt-2 rounded-xl px-3 py-2.5 border flex gap-2 items-start"
+                            style={{ background: 'var(--color-bg2)', borderColor: 'var(--color-bg4)' }}>
+                            <NotebookPen size={13} className="shrink-0 mt-0.5" style={{ color: 'var(--color-txt3)' }} />
+                            <p className="text-xs leading-relaxed flex-1 whitespace-pre-wrap break-words" style={{ color: 'var(--color-txt2)' }}>
+                              {stageNote}
+                            </p>
+                            <button onClick={() => openNoteEdit(step.key, stageNote)}
+                              className="shrink-0 w-6 h-6 flex items-center justify-center rounded-md hover:bg-[var(--color-bg3)]"
+                              style={{ color: 'var(--color-txt3)' }}>
+                              <Pencil size={11} />
+                            </button>
+                          </div>
+                        )
+                      }
+                      return (
+                        <button
+                          onClick={() => openNoteEdit(step.key, null)}
+                          className="mt-2 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-dashed text-xs"
+                          style={{ borderColor: 'var(--color-bg4)', color: 'var(--color-txt3)' }}>
+                          <NotebookPen size={13} /> Add note
+                        </button>
+                      )
+                    })()}
                   </div>
                 </div>
               )

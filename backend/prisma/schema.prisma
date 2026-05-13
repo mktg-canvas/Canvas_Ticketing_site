@@ -131,7 +131,10 @@ model Ticket {
   status        TicketStatus   @default(open)
   source        TicketSource   @default(client)
   raised_by     String         @db.Uuid
-  is_priority   Boolean        @default(false)
+  is_priority      Boolean        @default(false)
+  open_note        String?
+  in_progress_note String?
+  closed_note      String?
   opened_at     DateTime?      @db.Timestamptz
   in_progress_at DateTime?     @db.Timestamptz
   closed_at     DateTime?      @db.Timestamptz

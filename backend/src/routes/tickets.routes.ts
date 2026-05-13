@@ -14,6 +14,7 @@ router.patch('/:id', authorize('super_admin'), tickets.editTicket)
 router.delete('/:id', authorize('super_admin'), tickets.deleteTicket)
 router.patch('/:id/status', authorize('cem', 'super_admin'), tickets.updateStatus)
 router.post('/:id/comments', authorize('cem', 'super_admin'), tickets.addComment)
+router.patch('/:id/stage-note', authorize('cem', 'super_admin'), tickets.updateStageNote)
 router.post('/:id/attachments', authorize('cem', 'super_admin'), upload.single('file'), tickets.uploadAttachment)
 
 export default router

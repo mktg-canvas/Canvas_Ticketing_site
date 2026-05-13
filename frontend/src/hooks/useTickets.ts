@@ -99,6 +99,16 @@ export function useUploadAttachment() {
   })
 }
 
+export function useUpdateStageNote() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, stage, note }: { id: string; stage: string; note: string }) => {
+      await api.patch(`/tickets/${id}/stage-note`, { stage, note })
+    },
+    onSuccess: (_d, { id }) => qc.invalidateQueries({ queryKey: ['ticket', id] }),
+  })
+}
+
 export function useAddComment() {
   const qc = useQueryClient()
   return useMutation({

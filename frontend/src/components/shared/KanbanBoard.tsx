@@ -29,12 +29,24 @@ function MiniCard({ ticket, linkTo }: MiniCardProps) {
   const navigate = useNavigate()
   const category = getCategoryName(ticket.category)
   const badge = SOURCE_BADGE[ticket.source]
+  const isOverdue = ticket.status === 'open' && ticket.opened_at
+    && (Date.now() - new Date(ticket.opened_at).getTime()) > 24 * 3_600_000
+
   return (
     <div
       onClick={() => navigate(linkTo)}
-      className="rounded-xl border cursor-pointer active:opacity-70"
-      style={{ background: 'var(--color-bg0)', borderColor: 'var(--color-bg4)' }}
+      className="rounded-xl border cursor-pointer active:opacity-70 relative"
+      style={{
+        background: 'var(--color-bg0)',
+        borderColor: isOverdue ? '#ef4444' : 'var(--color-bg4)',
+      }}
     >
+      {isOverdue && (
+        <span className="absolute -top-1 -right-1 flex h-3 w-3">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: '#ef4444' }} />
+          <span className="relative inline-flex rounded-full h-3 w-3" style={{ background: '#ef4444' }} />
+        </span>
+      )}
       <div className="px-3 py-2.5 flex gap-2">
         {/* Left: 3 lines */}
         <div className="flex-1 min-w-0">
