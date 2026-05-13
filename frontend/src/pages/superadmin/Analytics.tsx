@@ -134,18 +134,17 @@ function FilterSelect({ value, onChange, placeholder, children }: FilterSelectPr
   )
 }
 
-function groupBarLabel(name: string) {
-  return ({ x, y, width, height }: any) => {
-    const w = Number(width), h = Number(height)
-    if (!w || w < 8 || h < 14) return <g />
-    return (
-      <text x={Number(x) + w / 2} y={Number(y) + h / 2}
-        textAnchor="middle" dominantBaseline="middle"
-        fontSize={8} fontWeight={700} fill="rgba(255,255,255,0.95)">
-        {name}
+function makeGroupTick(offset: number) {
+  return ({ x, y, payload }: any) => (
+    <g transform={`translate(${x},${y})`}>
+      <text y={10} textAnchor="middle" fontSize={11} fill={COLORS.axisTxt}>
+        {payload.value}
       </text>
-    )
-  }
+      <text x={-offset} y={24} textAnchor="middle" fontSize={8} fontWeight={700} fill={COLORS.total}>Total</text>
+      <text x={0}        y={24} textAnchor="middle" fontSize={8} fontWeight={700} fill={COLORS.client}>Client</text>
+      <text x={offset}   y={24} textAnchor="middle" fontSize={8} fontWeight={700} fill={COLORS.cem}>CEM</text>
+    </g>
+  )
 }
 
 const ChartTooltip = ({ active, payload, label }: any) => {
@@ -679,70 +678,56 @@ export default function Analytics() {
                 </p>
               </div>
             ) : chartType === 'bar' ? (
-              <>
-                <ResponsiveContainer width="100%" height={isMobile ? 240 : 320}>
-                  <BarChart data={chartData} margin={{ top: 4, right: 16, left: -8, bottom: 0 }}
-                    barCategoryGap="28%" barSize={isMobile ? 14 : 18}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={COLORS.gridLn} vertical={false} />
-                    <XAxis
-                      dataKey="name"
-                      tick={{ fontSize: 11, fill: COLORS.axisTxt }}
-                      tickLine={false}
-                      axisLine={false}
-                      interval={0}
-                      angle={chartData.length > 6 ? -30 : 0}
-                      textAnchor={chartData.length > 6 ? 'end' : 'middle'}
-                      height={chartData.length > 6 ? 70 : 30}
-                    />
-                    <YAxis tick={{ fontSize: 11, fill: COLORS.axisTxt }} tickLine={false} axisLine={false} allowDecimals={false} />
-                    {dimension === 'bySource' ? (
-                      <Tooltip content={<ChartTooltip />} cursor={{ fill: '#000', opacity: 0.04 }} />
-                    ) : (
-                      <Tooltip content={<GroupedSourceTooltip />} cursor={{ fill: '#000', opacity: 0.04 }} />
-                    )}
-                    <Legend
-                      wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
-                      iconType="square"
-                      iconSize={10}
-                      formatter={(value) => <span style={{ color: 'var(--color-txt2)' }}>{value}</span>}
-                    />
-                    {dimension === 'bySource' ? (
-                      <>
-                        <Bar dataKey="Open"        stackId="a" fill={COLORS.open}   radius={[0, 0, 0, 0]} />
-                        <Bar dataKey="In Progress" stackId="a" fill={COLORS.inProg} radius={[0, 0, 0, 0]} />
-                        <Bar dataKey="Closed"      stackId="a" fill={COLORS.closed} radius={[4, 4, 0, 0]} />
-                      </>
-                    ) : (
-                      <>
-                        {/* Total group — label inside Open segment */}
-                        <Bar dataKey="total_open"   stackId="total"  fill={COLORS.open}   radius={[0, 0, 0, 0]} name="Open"        label={groupBarLabel('Total')} />
-                        <Bar dataKey="total_inprog" stackId="total"  fill={COLORS.inProg} radius={[0, 0, 0, 0]} name="In Progress" />
-                        <Bar dataKey="total_closed" stackId="total"  fill={COLORS.closed} radius={[4, 4, 0, 0]} name="Closed"       />
-                        {/* Client Reported group — label inside Open segment */}
-                        <Bar dataKey="client_open"   stackId="client" fill={COLORS.open}   radius={[0, 0, 0, 0]} name="Open"        legendType="none" label={groupBarLabel('Client')} />
-                        <Bar dataKey="client_inprog" stackId="client" fill={COLORS.inProg} radius={[0, 0, 0, 0]} name="In Progress" legendType="none" />
-                        <Bar dataKey="client_closed" stackId="client" fill={COLORS.closed} radius={[4, 4, 0, 0]} name="Closed"       legendType="none" />
-                        {/* CEM Observed group — label inside Open segment */}
-                        <Bar dataKey="cem_open"   stackId="cem" fill={COLORS.open}   radius={[0, 0, 0, 0]} name="Open"        legendType="none" label={groupBarLabel('CEM')} />
-                        <Bar dataKey="cem_inprog" stackId="cem" fill={COLORS.inProg} radius={[0, 0, 0, 0]} name="In Progress" legendType="none" />
-                        <Bar dataKey="cem_closed" stackId="cem" fill={COLORS.closed} radius={[4, 4, 0, 0]} name="Closed"       legendType="none" />
-                      </>
-                    )}
-                  </BarChart>
-                </ResponsiveContainer>
-                {/* Group key */}
-                {dimension !== 'bySource' && (
-                  <div className="flex justify-center gap-5 pb-2 pt-0 text-xs flex-wrap">
-                    {[
-                      { label: 'Total',           color: COLORS.total },
-                      { label: 'Client Reported', color: COLORS.client },
-                      { label: 'CEM Observed',    color: COLORS.cem },
-                    ].map(g => (
-                      <span key={g.label} className="font-semibold" style={{ color: g.color }}>{g.label}</span>
-                    ))}
-                  </div>
-                )}
-              </>
+              <ResponsiveContainer width="100%" height={isMobile ? 240 : 320}>
+                {(() => {
+                  const grouped = dimension !== 'bySource'
+                  const barOff  = isMobile ? 18 : 22
+                  const useTick = grouped && chartData.length <= 8
+                  return (
+                    <BarChart data={chartData} margin={{ top: 4, right: 16, left: -8, bottom: 0 }}
+                      barCategoryGap="28%" barSize={isMobile ? 14 : 18}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={COLORS.gridLn} vertical={false} />
+                      <XAxis
+                        dataKey="name"
+                        tick={useTick ? makeGroupTick(barOff) : { fontSize: 11, fill: COLORS.axisTxt }}
+                        tickLine={false}
+                        axisLine={false}
+                        interval={0}
+                        angle={!useTick && chartData.length > 6 ? -30 : 0}
+                        textAnchor={!useTick && chartData.length > 6 ? 'end' : 'middle'}
+                        height={useTick ? 44 : chartData.length > 6 ? 70 : 30}
+                      />
+                      <YAxis tick={{ fontSize: 11, fill: COLORS.axisTxt }} tickLine={false} axisLine={false} allowDecimals={false} />
+                      <Tooltip content={grouped ? <GroupedSourceTooltip /> : <ChartTooltip />} cursor={{ fill: '#000', opacity: 0.04 }} />
+                      <Legend
+                        wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
+                        iconType="square"
+                        iconSize={10}
+                        formatter={(value) => <span style={{ color: 'var(--color-txt2)' }}>{value}</span>}
+                      />
+                      {!grouped ? (
+                        <>
+                          <Bar dataKey="Open"        stackId="a" fill={COLORS.open}   radius={[0, 0, 0, 0]} />
+                          <Bar dataKey="In Progress" stackId="a" fill={COLORS.inProg} radius={[0, 0, 0, 0]} />
+                          <Bar dataKey="Closed"      stackId="a" fill={COLORS.closed} radius={[4, 4, 0, 0]} />
+                        </>
+                      ) : (
+                        <>
+                          <Bar dataKey="total_open"    stackId="total"  fill={COLORS.open}   radius={[0, 0, 0, 0]} name="Open"        />
+                          <Bar dataKey="total_inprog"  stackId="total"  fill={COLORS.inProg} radius={[0, 0, 0, 0]} name="In Progress" />
+                          <Bar dataKey="total_closed"  stackId="total"  fill={COLORS.closed} radius={[4, 4, 0, 0]} name="Closed"       />
+                          <Bar dataKey="client_open"   stackId="client" fill={COLORS.open}   radius={[0, 0, 0, 0]} name="Open"        legendType="none" />
+                          <Bar dataKey="client_inprog" stackId="client" fill={COLORS.inProg} radius={[0, 0, 0, 0]} name="In Progress" legendType="none" />
+                          <Bar dataKey="client_closed" stackId="client" fill={COLORS.closed} radius={[4, 4, 0, 0]} name="Closed"       legendType="none" />
+                          <Bar dataKey="cem_open"      stackId="cem"    fill={COLORS.open}   radius={[0, 0, 0, 0]} name="Open"        legendType="none" />
+                          <Bar dataKey="cem_inprog"    stackId="cem"    fill={COLORS.inProg} radius={[0, 0, 0, 0]} name="In Progress" legendType="none" />
+                          <Bar dataKey="cem_closed"    stackId="cem"    fill={COLORS.closed} radius={[4, 4, 0, 0]} name="Closed"       legendType="none" />
+                        </>
+                      )}
+                    </BarChart>
+                  )
+                })()}
+              </ResponsiveContainer>
             ) : (
               <ResponsiveContainer width="100%" height={isMobile ? 240 : 320}>
                 <LineChart data={chartData} margin={{ top: 4, right: 16, left: -8, bottom: 0 }}>
