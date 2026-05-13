@@ -766,10 +766,10 @@ export default function Analytics() {
                       {panel.title}
                     </p>
                     <ResponsiveContainer width="100%" height={isMobile ? 200 : 240}>
-                      <LineChart data={chartData} margin={{ top: 4, right: 8, left: -18, bottom: 0 }}>
+                      <LineChart data={chartData} margin={{ top: 4, right: 8, left: 4, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke={COLORS.gridLn} vertical={false} />
                         <XAxis dataKey="name" tick={{ fontSize: 10, fill: COLORS.axisTxt }} tickLine={false} axisLine={false} interval={0} angle={chartData.length > 5 ? -30 : 0} textAnchor={chartData.length > 5 ? 'end' : 'middle'} height={chartData.length > 5 ? 60 : 24} />
-                        <YAxis tick={{ fontSize: 10, fill: COLORS.axisTxt }} tickLine={false} axisLine={false} allowDecimals={false} width={28} />
+                        <YAxis tick={{ fontSize: 10, fill: COLORS.axisTxt }} tickLine={false} axisLine={false} allowDecimals={false} width={36} />
                         <Tooltip content={<ChartTooltip />} />
                         <Legend wrapperStyle={{ fontSize: 10, paddingTop: 6 }} iconType="line" iconSize={12} formatter={(v) => <span style={{ color: 'var(--color-txt2)' }}>{v}</span>} />
                         {panel.lines.map(l => (
