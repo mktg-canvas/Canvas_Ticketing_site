@@ -29,8 +29,6 @@ function MiniCard({ ticket, linkTo }: MiniCardProps) {
   const navigate = useNavigate()
   const category = getCategoryName(ticket.category)
   const badge = SOURCE_BADGE[ticket.source]
-  const location = [ticket.building?.name, ticket.floor?.name, ticket.client?.name].filter(Boolean).join(' · ')
-
   return (
     <div
       onClick={() => navigate(linkTo)}
@@ -55,12 +53,24 @@ function MiniCard({ ticket, linkTo }: MiniCardProps) {
               </span>
             )}
           </div>
-          {/* Line 2: building · floor · client */}
-          {location && (
-            <p className="text-xs truncate mb-0.5" style={{ color: 'var(--color-txt3)' }}>
-              {location}
-            </p>
-          )}
+          {/* Line 2: building · floor · client as pills */}
+          <div className="flex items-center gap-1 flex-wrap mb-0.5">
+            {ticket.building?.name && (
+              <span className="px-1.5 py-0.5 rounded-md" style={{ background: 'var(--color-bg3)', color: 'var(--color-txt3)', fontSize: 10 }}>
+                {ticket.building.name}
+              </span>
+            )}
+            {ticket.floor?.name && (
+              <span className="px-1.5 py-0.5 rounded-md" style={{ background: 'var(--color-bg3)', color: 'var(--color-txt3)', fontSize: 10 }}>
+                {ticket.floor.name}
+              </span>
+            )}
+            {ticket.client?.name && (
+              <span className="px-1.5 py-0.5 rounded-md" style={{ background: 'var(--color-bg3)', color: 'var(--color-txt3)', fontSize: 10 }}>
+                {ticket.client.name}
+              </span>
+            )}
+          </div>
           {/* Line 3: sub-category */}
           {ticket.sub_category && (
             <p className="truncate" style={{ color: 'var(--color-txt3)', fontSize: 10 }}>
