@@ -134,12 +134,14 @@ function FilterSelect({ value, onChange, placeholder, children }: FilterSelectPr
   )
 }
 
-function groupBarLabel(name: string, color: string) {
-  return ({ x, y, width }: any) => {
-    if (!width || Number(width) < 8) return <g />
+function groupBarLabel(name: string) {
+  return ({ x, y, width, height }: any) => {
+    const w = Number(width), h = Number(height)
+    if (!w || w < 8 || h < 14) return <g />
     return (
-      <text x={Number(x) + Number(width) / 2} y={Number(y) - 4}
-        textAnchor="middle" fontSize={9} fontWeight={700} fill={color}>
+      <text x={Number(x) + w / 2} y={Number(y) + h / 2}
+        textAnchor="middle" dominantBaseline="middle"
+        fontSize={8} fontWeight={700} fill="rgba(255,255,255,0.95)">
         {name}
       </text>
     )
@@ -679,7 +681,7 @@ export default function Analytics() {
             ) : chartType === 'bar' ? (
               <>
                 <ResponsiveContainer width="100%" height={isMobile ? 240 : 320}>
-                  <BarChart data={chartData} margin={{ top: 22, right: 16, left: -8, bottom: 0 }}
+                  <BarChart data={chartData} margin={{ top: 4, right: 16, left: -8, bottom: 0 }}
                     barCategoryGap="28%" barSize={isMobile ? 14 : 18}>
                     <CartesianGrid strokeDasharray="3 3" stroke={COLORS.gridLn} vertical={false} />
                     <XAxis
@@ -712,18 +714,18 @@ export default function Analytics() {
                       </>
                     ) : (
                       <>
-                        {/* Total group */}
-                        <Bar dataKey="total_open"   stackId="total"  fill={COLORS.open}   radius={[0, 0, 0, 0]} name="Open"        />
+                        {/* Total group — label inside Open segment */}
+                        <Bar dataKey="total_open"   stackId="total"  fill={COLORS.open}   radius={[0, 0, 0, 0]} name="Open"        label={groupBarLabel('Total')} />
                         <Bar dataKey="total_inprog" stackId="total"  fill={COLORS.inProg} radius={[0, 0, 0, 0]} name="In Progress" />
-                        <Bar dataKey="total_closed" stackId="total"  fill={COLORS.closed} radius={[4, 4, 0, 0]} name="Closed"       label={groupBarLabel('Total', COLORS.total)} />
-                        {/* Client Reported group */}
-                        <Bar dataKey="client_open"   stackId="client" fill={COLORS.open}   radius={[0, 0, 0, 0]} name="Open"        legendType="none" />
+                        <Bar dataKey="total_closed" stackId="total"  fill={COLORS.closed} radius={[4, 4, 0, 0]} name="Closed"       />
+                        {/* Client Reported group — label inside Open segment */}
+                        <Bar dataKey="client_open"   stackId="client" fill={COLORS.open}   radius={[0, 0, 0, 0]} name="Open"        legendType="none" label={groupBarLabel('Client')} />
                         <Bar dataKey="client_inprog" stackId="client" fill={COLORS.inProg} radius={[0, 0, 0, 0]} name="In Progress" legendType="none" />
-                        <Bar dataKey="client_closed" stackId="client" fill={COLORS.closed} radius={[4, 4, 0, 0]} name="Closed"       legendType="none" label={groupBarLabel('Client', COLORS.client)} />
-                        {/* CEM Observed group */}
-                        <Bar dataKey="cem_open"   stackId="cem" fill={COLORS.open}   radius={[0, 0, 0, 0]} name="Open"        legendType="none" />
+                        <Bar dataKey="client_closed" stackId="client" fill={COLORS.closed} radius={[4, 4, 0, 0]} name="Closed"       legendType="none" />
+                        {/* CEM Observed group — label inside Open segment */}
+                        <Bar dataKey="cem_open"   stackId="cem" fill={COLORS.open}   radius={[0, 0, 0, 0]} name="Open"        legendType="none" label={groupBarLabel('CEM')} />
                         <Bar dataKey="cem_inprog" stackId="cem" fill={COLORS.inProg} radius={[0, 0, 0, 0]} name="In Progress" legendType="none" />
-                        <Bar dataKey="cem_closed" stackId="cem" fill={COLORS.closed} radius={[4, 4, 0, 0]} name="Closed"       legendType="none" label={groupBarLabel('CEM', COLORS.cem)} />
+                        <Bar dataKey="cem_closed" stackId="cem" fill={COLORS.closed} radius={[4, 4, 0, 0]} name="Closed"       legendType="none" />
                       </>
                     )}
                   </BarChart>
