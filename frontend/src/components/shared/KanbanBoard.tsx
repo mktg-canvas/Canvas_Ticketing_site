@@ -4,10 +4,11 @@ import { Ticket, Clock, CheckCircle, Calendar } from 'lucide-react'
 import { useTickets } from '../../hooks/useTickets'
 import { type Period, todayStr, periodToParams } from '../../lib/periodParams'
 
-function fmtDate(date: string): string {
+function fmtShort(date?: string | null): string {
+  if (!date) return ''
   return new Date(date).toLocaleString('en-IN', {
-    day: '2-digit', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
+    day: '2-digit', month: 'short',
+    hour: '2-digit', minute: '2-digit', hour12: false,
   })
 }
 
@@ -17,43 +18,75 @@ function getCategoryName(category: any): string {
   return category.name
 }
 
+const SOURCE_BADGE: Record<string, { label: string; bg: string; color: string }> = {
+  client: { label: 'Client Reported', bg: 'rgba(249,115,22,0.15)', color: '#f97316' },
+  cem:    { label: 'CEM Observed',    bg: 'rgba(6,182,212,0.15)',  color: '#06b6d4' },
+}
+
 interface MiniCardProps { ticket: any; linkTo: string }
 
 function MiniCard({ ticket, linkTo }: MiniCardProps) {
   const navigate = useNavigate()
   const category = getCategoryName(ticket.category)
+  const badge = SOURCE_BADGE[ticket.source]
+  const location = [ticket.building?.name, ticket.floor?.name, ticket.client?.name].filter(Boolean).join(' · ')
+
   return (
     <div
       onClick={() => navigate(linkTo)}
       className="rounded-xl border cursor-pointer active:opacity-70"
       style={{ background: 'var(--color-bg0)', borderColor: 'var(--color-bg4)' }}
     >
-      <div className="px-3 py-2.5">
-        <div className="flex items-start justify-between gap-2 mb-1">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <p className="text-xs font-bold capitalize leading-snug truncate" style={{ color: 'var(--color-txt1)' }}>
-              {category}
-            </p>
-            <span className="shrink-0 font-semibold px-1.5 py-0.5 rounded-md"
-              style={{ background: 'var(--color-bg2)', color: 'var(--color-txt3)', fontSize: 10 }}>
+      <div className="px-3 py-2.5 flex gap-2">
+        {/* Left: 3 lines */}
+        <div className="flex-1 min-w-0">
+          {/* Line 1: #number + category + source badge */}
+          <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+            <span className="font-bold text-xs shrink-0" style={{ color: 'var(--color-txt1)' }}>
               #{ticket.ticket_number}
             </span>
+            <span className="text-xs capitalize truncate" style={{ color: 'var(--color-txt2)' }}>
+              {category}
+            </span>
+            {badge && (
+              <span className="shrink-0 px-1.5 py-0.5 rounded-full font-medium"
+                style={{ background: badge.bg, color: badge.color, fontSize: 10 }}>
+                {badge.label}
+              </span>
+            )}
           </div>
-          <span className="text-xs shrink-0" style={{ color: 'var(--color-txt3)', fontSize: 11 }}>{fmtDate(ticket.created_at)}</span>
-        </div>
-        {ticket.sub_category && (
-          <p className="text-xs mb-1.5" style={{ color: 'var(--color-txt2)' }}>{ticket.sub_category}</p>
-        )}
-        <div className="flex items-center gap-1.5 flex-wrap mt-1">
-          {ticket.client && (
-            <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: 'var(--color-bg3)', color: 'var(--color-txt3)' }}>
-              {ticket.client.name}
-            </span>
+          {/* Line 2: building · floor · client */}
+          {location && (
+            <p className="text-xs truncate mb-0.5" style={{ color: 'var(--color-txt3)' }}>
+              {location}
+            </p>
           )}
-          {ticket.building && (
-            <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: 'var(--color-bg3)', color: 'var(--color-txt3)' }}>
-              {ticket.building.name}
-            </span>
+          {/* Line 3: sub-category */}
+          {ticket.sub_category && (
+            <p className="truncate" style={{ color: 'var(--color-txt3)', fontSize: 10 }}>
+              {ticket.sub_category}
+            </p>
+          )}
+        </div>
+        {/* Right: status timestamps */}
+        <div className="flex flex-col gap-0.5 shrink-0 items-end justify-center">
+          {ticket.opened_at && (
+            <div className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: '#ef4444' }} />
+              <span style={{ color: 'var(--color-txt3)', fontSize: 10 }}>{fmtShort(ticket.opened_at)}</span>
+            </div>
+          )}
+          {ticket.in_progress_at && (
+            <div className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: '#f59e0b' }} />
+              <span style={{ color: 'var(--color-txt3)', fontSize: 10 }}>{fmtShort(ticket.in_progress_at)}</span>
+            </div>
+          )}
+          {ticket.closed_at && (
+            <div className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: '#22c55e' }} />
+              <span style={{ color: 'var(--color-txt3)', fontSize: 10 }}>{fmtShort(ticket.closed_at)}</span>
+            </div>
           )}
         </div>
       </div>
