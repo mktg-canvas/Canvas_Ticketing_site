@@ -729,6 +729,7 @@ export default function Analytics() {
                 })()}
               </ResponsiveContainer>
             ) : (
+              <>
               <ResponsiveContainer width="100%" height={isMobile ? 240 : 320}>
                 <LineChart data={chartData} margin={{ top: 4, right: 16, left: -8, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={COLORS.gridLn} vertical={false} />
@@ -758,13 +759,31 @@ export default function Analytics() {
                     </>
                   ) : (
                     <>
+                      {/* Source — solid */}
                       <Line type="monotone" dataKey="Total"           stroke={COLORS.total}  strokeWidth={2.2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
                       <Line type="monotone" dataKey="Client Reported" stroke={COLORS.client} strokeWidth={2.2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
                       <Line type="monotone" dataKey="CEM Observed"    stroke={COLORS.cem}    strokeWidth={2.2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                      {/* Status — dashed */}
+                      <Line type="monotone" dataKey="Open"        stroke={COLORS.open}   strokeWidth={1.8} strokeDasharray="5 3" dot={{ r: 2 }} activeDot={{ r: 4 }} />
+                      <Line type="monotone" dataKey="In Progress" stroke={COLORS.inProg} strokeWidth={1.8} strokeDasharray="5 3" dot={{ r: 2 }} activeDot={{ r: 4 }} />
+                      <Line type="monotone" dataKey="Closed"      stroke={COLORS.closed} strokeWidth={1.8} strokeDasharray="5 3" dot={{ r: 2 }} activeDot={{ r: 4 }} />
                     </>
                   )}
                 </LineChart>
               </ResponsiveContainer>
+              {dimension !== 'bySource' && (
+                <div className="flex justify-center gap-5 pb-2 text-xs" style={{ color: 'var(--color-txt3)' }}>
+                  <span className="flex items-center gap-1.5">
+                    <svg width="20" height="4"><line x1="0" y1="2" x2="20" y2="2" stroke="currentColor" strokeWidth="2" /></svg>
+                    Source (Total · Client · CEM)
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <svg width="20" height="4"><line x1="0" y1="2" x2="20" y2="2" stroke="currentColor" strokeWidth="2" strokeDasharray="5 3" /></svg>
+                    Status (Open · In Progress · Closed)
+                  </span>
+                </div>
+              )}
+              </>
             )}
           </div>
 
