@@ -16,6 +16,8 @@ import { useClients } from '../../hooks/useClients'
 import { useCategories } from '../../hooks/useCategories'
 import { useUsers } from '../../hooks/useUsers'
 import { useAuthStore } from '../../store/authStore'
+import { useTickets } from '../../hooks/useTickets'
+import { StatusBadge } from '../../components/tickets/StatusBadge'
 
 type DatePreset = '7d' | '30d' | '90d' | 'all' | 'custom'
 type Dimension = 'byBuilding' | 'byCategory' | 'byClient' | 'byCem' | 'byMonth' | 'bySource'
@@ -230,9 +232,190 @@ const GroupedSourceTooltip = ({ active, payload, label }: any) => {
   )
 }
 
+function fmtShort(date?: string | null): string {
+  if (!date) return ''
+  return new Date(date).toLocaleString('en-IN', {
+    day: '2-digit', month: 'short',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  })
+}
+
+function getCategoryName(category: any): string {
+  if (!category) return ''
+  if (typeof category === 'string') return category.replace(/_/g, ' ')
+  return category.name
+}
+
+const SOURCE_BADGE: Record<string, { label: string; bg: string; color: string }> = {
+  client: { label: 'Client Reported', bg: 'rgba(249,115,22,0.15)', color: '#f97316' },
+  cem:    { label: 'CEM Observed',    bg: 'rgba(6,182,212,0.15)',  color: '#06b6d4' },
+}
+
+interface DrilldownState {
+  label: string
+  filters: Record<string, string | undefined>
+}
+
+function DrilldownPanel({
+  label,
+  filters,
+  onClose,
+}: {
+  label: string
+  filters: Record<string, string | undefined>
+  onClose: () => void
+}) {
+  const navigate = useNavigate()
+  const cleanFilters = Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== undefined))
+  const { data, isLoading } = useTickets(cleanFilters)
+  const tickets = (data as any)?.tickets ?? []
+  const total = (data as any)?.total ?? 0
+
+  return (
+    <div className="border-t" style={{ borderColor: 'var(--color-bg4)' }}>
+      <div className="px-4 pt-4 pb-3 flex items-start justify-between gap-3"
+        style={{ borderBottom: `1px solid var(--color-bg4)` }}>
+        <div>
+          <p className="text-sm font-bold" style={{ color: 'var(--color-txt1)' }}>{label}</p>
+          {!isLoading && (
+            <p className="text-xs mt-0.5" style={{ color: 'var(--color-txt3)' }}>
+              {total} ticket{total !== 1 ? 's' : ''}{total > 20 ? ' · showing first 20' : ''}
+            </p>
+          )}
+        </div>
+        <button
+          onClick={onClose}
+          className="p-1.5 rounded-full shrink-0"
+          style={{ color: 'var(--color-txt3)', background: 'var(--color-bg3)' }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-bg4)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'var(--color-bg3)')}
+        >
+          <X size={13} />
+        </button>
+      </div>
+      {isLoading ? (
+        <div className="px-4 py-4 flex flex-col gap-2.5">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-16 rounded-2xl animate-pulse" style={{ background: 'var(--color-bg3)' }} />
+          ))}
+        </div>
+      ) : tickets.length === 0 ? (
+        <div className="px-4 py-8 text-center">
+          <p className="text-sm" style={{ color: 'var(--color-txt3)' }}>No tickets match this selection</p>
+        </div>
+      ) : (
+        <div className="px-4 py-4 flex flex-col gap-2.5">
+          {tickets.map((ticket: any) => {
+            const category = getCategoryName(ticket.category)
+            const badge = SOURCE_BADGE[ticket.source]
+            const isOverdue = ticket.status === 'open' && ticket.opened_at
+              && (Date.now() - new Date(ticket.opened_at).getTime()) > 24 * 3_600_000
+            return (
+              <div
+                key={ticket.id}
+                onClick={() => navigate(`/admin/tickets/${ticket.id}`)}
+                className="rounded-2xl border cursor-pointer relative px-4 py-3"
+                style={{
+                  background: 'var(--color-bg0)',
+                  borderColor: isOverdue ? '#ef4444' : 'var(--color-bg4)',
+                  borderWidth: isOverdue ? 1.5 : 1,
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-bg2)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'var(--color-bg0)')}
+              >
+                {isOverdue && (
+                  <span className="absolute -top-1.5 -right-1.5 flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: '#ef4444' }} />
+                    <span className="relative inline-flex rounded-full h-3 w-3" style={{ background: '#ef4444' }} />
+                  </span>
+                )}
+                <div className="flex items-start gap-3 min-w-0">
+                  <div className="flex-1 min-w-0">
+                    {/* Line 1: number + priority + status + category + source */}
+                    <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
+                      <span className="text-xs font-bold shrink-0" style={{ color: 'var(--color-txt1)' }}>
+                        #{ticket.ticket_number}
+                      </span>
+                      {ticket.is_priority && (
+                        <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                          style={{ background: 'var(--color-danger)', color: '#fff' }}>P</span>
+                      )}
+                      <StatusBadge status={ticket.status} />
+                      {category && (
+                        <span className="text-xs capitalize" style={{ color: 'var(--color-txt2)' }}>
+                          {category}
+                        </span>
+                      )}
+                      {badge && (
+                        <span className="shrink-0 px-2 py-0.5 rounded-full font-medium"
+                          style={{ background: badge.bg, color: badge.color, fontSize: 10 }}>
+                          {badge.label}
+                        </span>
+                      )}
+                    </div>
+                    {/* Line 2: building + floor + client pills */}
+                    <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                      {ticket.building?.name && (
+                        <span className="px-2 py-0.5 rounded-full border"
+                          style={{ background: 'var(--color-bg3)', borderColor: 'var(--color-bg4)', color: 'var(--color-txt3)', fontSize: 10 }}>
+                          {ticket.building.name}
+                        </span>
+                      )}
+                      {ticket.floor?.name && (
+                        <span className="px-2 py-0.5 rounded-full border"
+                          style={{ background: 'var(--color-bg3)', borderColor: 'var(--color-bg4)', color: 'var(--color-txt3)', fontSize: 10 }}>
+                          {ticket.floor.name}
+                        </span>
+                      )}
+                      {ticket.client?.name && (
+                        <span className="px-2 py-0.5 rounded-full border"
+                          style={{ background: 'var(--color-bg3)', borderColor: 'var(--color-bg4)', color: 'var(--color-txt3)', fontSize: 10 }}>
+                          {ticket.client.name}
+                        </span>
+                      )}
+                    </div>
+                    {/* Line 3: sub_category or description */}
+                    {(ticket.sub_category || ticket.description) && (
+                      <p className="truncate text-[11px]" style={{ color: 'var(--color-txt3)' }}>
+                        {ticket.sub_category || ticket.description}
+                      </p>
+                    )}
+                  </div>
+                  {/* Right: status timestamps — min-w so text never clips */}
+                  <div className="flex flex-col gap-1 shrink-0 items-end justify-center" style={{ minWidth: 96 }}>
+                    {ticket.opened_at && (
+                      <div className="flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: '#ef4444' }} />
+                        <span className="whitespace-nowrap" style={{ color: 'var(--color-txt3)', fontSize: 10 }}>{fmtShort(ticket.opened_at)}</span>
+                      </div>
+                    )}
+                    {ticket.in_progress_at && (
+                      <div className="flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: '#f59e0b' }} />
+                        <span className="whitespace-nowrap" style={{ color: 'var(--color-txt3)', fontSize: 10 }}>{fmtShort(ticket.in_progress_at)}</span>
+                      </div>
+                    )}
+                    {ticket.closed_at && (
+                      <div className="flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: '#22c55e' }} />
+                        <span className="whitespace-nowrap" style={{ color: 'var(--color-txt3)', fontSize: 10 }}>{fmtShort(ticket.closed_at)}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function Analytics() {
   const navigate = useNavigate()
   const chartRef = useRef<HTMLDivElement>(null)
+  const drilldownRef = useRef<HTMLDivElement>(null)
   const [isExporting, setIsExporting] = useState(false)
   const [preset, setPreset] = useState<DatePreset>('30d')
   const [customFrom, setCustomFrom] = useState(todayStr())
@@ -245,6 +428,7 @@ export default function Analytics() {
   const [categoryId, setCategoryId] = useState('')
   const [cemId, setCemId] = useState('')
   const [source, setSource] = useState<'all' | 'client' | 'cem'>('all')
+  const [drilldown, setDrilldown] = useState<DrilldownState | null>(null)
 
   const dateRange = useMemo(
     () => computeRange(preset, customFrom, customTo),
@@ -259,6 +443,63 @@ export default function Analytics() {
     ...(source !== 'all' && { source }),
   }), [dateRange, buildingId, clientId, categoryId, cemId, source])
   const hasFilter = !!(buildingId || clientId || categoryId || cemId)
+
+  useEffect(() => { setDrilldown(null) }, [dimension])
+
+  function openDrilldown(rowData: any, dataKey: string) {
+    const KEY_MAP: Record<string, { status?: string; barSource?: string }> = {
+      total_open:      { status: 'open' },
+      total_inprog:    { status: 'in_progress' },
+      total_closed:    { status: 'closed' },
+      client_open:     { status: 'open',        barSource: 'client' },
+      client_inprog:   { status: 'in_progress', barSource: 'client' },
+      client_closed:   { status: 'closed',      barSource: 'client' },
+      cem_open:        { status: 'open',        barSource: 'cem' },
+      cem_inprog:      { status: 'in_progress', barSource: 'cem' },
+      cem_closed:      { status: 'closed',      barSource: 'cem' },
+      Open:            { status: 'open' },
+      'In Progress':   { status: 'in_progress' },
+      Closed:          { status: 'closed' },
+    }
+    const { status, barSource } = KEY_MAP[dataKey] ?? {}
+    const f: Record<string, string | undefined> = {}
+
+    if (dateRange.from) f.from = dateRange.from
+    if (dateRange.to) f.to = dateRange.to
+
+    if (buildingId && dimension !== 'byBuilding') f.buildingId = buildingId
+    if (clientId && dimension !== 'byClient') f.clientId = clientId
+    if (categoryId && dimension !== 'byCategory') f.category = categoryId
+    if (cemId && dimension !== 'byCem') f.cemId = cemId
+
+    if (dimension === 'byBuilding') f.buildingId = rowData._id
+    else if (dimension === 'byClient') f.clientId = rowData._id
+    else if (dimension === 'byCategory') f.category = rowData._id
+    else if (dimension === 'byCem') f.cemId = rowData._id
+    else if (dimension === 'bySource') f.source = rowData._id
+    else if (dimension === 'byMonth' && rowData._month) {
+      const [y, m] = rowData._month.split('-').map(Number)
+      const lastDay = new Date(y, m, 0).getDate()
+      f.from = new Date(`${rowData._month}-01T00:00:00`).toISOString()
+      f.to = new Date(`${rowData._month}-${String(lastDay).padStart(2, '0')}T23:59:59`).toISOString()
+    }
+
+    if (barSource) f.source = barSource
+    else if (source !== 'all' && dimension !== 'bySource') f.source = source
+
+    if (status) f.status = status
+
+    const statusLabel = status === 'in_progress' ? 'In Progress'
+      : status === 'open' ? 'Open'
+      : status === 'closed' ? 'Closed'
+      : undefined
+    const labelParts: string[] = [rowData.name]
+    if (statusLabel) labelParts.push(statusLabel)
+    if (barSource) labelParts.push(barSource === 'client' ? 'Client Reported' : 'CEM Observed')
+
+    setDrilldown({ label: labelParts.join(' · '), filters: f })
+    setTimeout(() => drilldownRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50)
+  }
 
   const accessToken = useAuthStore(s => s.accessToken)
   const { data, isLoading, isError, error, refetch } = useAnalytics(filters)
@@ -281,6 +522,8 @@ export default function Analytics() {
     const rows = data[dimension] as (DimRow | MonthRow)[]
     return rows.map(r => ({
       name: dimension === 'byMonth' ? fmtMonth((r as MonthRow).month) : (r as DimRow).name,
+      _id:    dimension === 'byMonth' ? undefined : (r as DimRow).id,
+      _month: dimension === 'byMonth' ? (r as MonthRow).month : undefined,
       // bySource tab: stacked by status
       Open: r.open,
       'In Progress': r.in_progress,
@@ -716,21 +959,21 @@ export default function Analytics() {
                       />
                       {!grouped ? (
                         <>
-                          <Bar dataKey="Open"        stackId="a" fill={COLORS.open}   radius={[0, 0, 0, 0]} />
-                          <Bar dataKey="In Progress" stackId="a" fill={COLORS.inProg} radius={[0, 0, 0, 0]} />
-                          <Bar dataKey="Closed"      stackId="a" fill={COLORS.closed} radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="Open"        stackId="a" fill={COLORS.open}   radius={[0, 0, 0, 0]} style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'Open')} />
+                          <Bar dataKey="In Progress" stackId="a" fill={COLORS.inProg} radius={[0, 0, 0, 0]} style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'In Progress')} />
+                          <Bar dataKey="Closed"      stackId="a" fill={COLORS.closed} radius={[4, 4, 0, 0]} style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'Closed')} />
                         </>
                       ) : (
                         <>
-                          <Bar dataKey="total_open"    stackId="total"  fill={COLORS.open}   radius={[0, 0, 0, 0]} name="Open"        />
-                          <Bar dataKey="total_inprog"  stackId="total"  fill={COLORS.inProg} radius={[0, 0, 0, 0]} name="In Progress" />
-                          <Bar dataKey="total_closed"  stackId="total"  fill={COLORS.closed} radius={[4, 4, 0, 0]} name="Closed"       />
-                          <Bar dataKey="client_open"   stackId="client" fill={COLORS.open}   radius={[0, 0, 0, 0]} name="Open"        legendType="none" />
-                          <Bar dataKey="client_inprog" stackId="client" fill={COLORS.inProg} radius={[0, 0, 0, 0]} name="In Progress" legendType="none" />
-                          <Bar dataKey="client_closed" stackId="client" fill={COLORS.closed} radius={[4, 4, 0, 0]} name="Closed"       legendType="none" />
-                          <Bar dataKey="cem_open"      stackId="cem"    fill={COLORS.open}   radius={[0, 0, 0, 0]} name="Open"        legendType="none" />
-                          <Bar dataKey="cem_inprog"    stackId="cem"    fill={COLORS.inProg} radius={[0, 0, 0, 0]} name="In Progress" legendType="none" />
-                          <Bar dataKey="cem_closed"    stackId="cem"    fill={COLORS.closed} radius={[4, 4, 0, 0]} name="Closed"       legendType="none" />
+                          <Bar dataKey="total_open"    stackId="total"  fill={COLORS.open}   radius={[0, 0, 0, 0]} name="Open"        style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'total_open')} />
+                          <Bar dataKey="total_inprog"  stackId="total"  fill={COLORS.inProg} radius={[0, 0, 0, 0]} name="In Progress" style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'total_inprog')} />
+                          <Bar dataKey="total_closed"  stackId="total"  fill={COLORS.closed} radius={[4, 4, 0, 0]} name="Closed"       style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'total_closed')} />
+                          <Bar dataKey="client_open"   stackId="client" fill={COLORS.open}   radius={[0, 0, 0, 0]} name="Open"        legendType="none" style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'client_open')} />
+                          <Bar dataKey="client_inprog" stackId="client" fill={COLORS.inProg} radius={[0, 0, 0, 0]} name="In Progress" legendType="none" style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'client_inprog')} />
+                          <Bar dataKey="client_closed" stackId="client" fill={COLORS.closed} radius={[4, 4, 0, 0]} name="Closed"       legendType="none" style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'client_closed')} />
+                          <Bar dataKey="cem_open"      stackId="cem"    fill={COLORS.open}   radius={[0, 0, 0, 0]} name="Open"        legendType="none" style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'cem_open')} />
+                          <Bar dataKey="cem_inprog"    stackId="cem"    fill={COLORS.inProg} radius={[0, 0, 0, 0]} name="In Progress" legendType="none" style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'cem_inprog')} />
+                          <Bar dataKey="cem_closed"    stackId="cem"    fill={COLORS.closed} radius={[4, 4, 0, 0]} name="Closed"       legendType="none" style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'cem_closed')} />
                         </>
                       )}
                     </BarChart>
@@ -739,7 +982,14 @@ export default function Analytics() {
               </ResponsiveContainer>
             ) : dimension === 'bySource' ? (
               <ResponsiveContainer width="100%" height={isMobile ? 240 : 300}>
-                <LineChart data={chartData} margin={{ top: 4, right: 16, left: -8, bottom: 0 }}>
+                <LineChart data={chartData} margin={{ top: 4, right: 16, left: -8, bottom: 0 }}
+                  style={{ cursor: 'pointer' }}
+                  onClick={(state: any) => {
+                    if (!state?.activeLabel) return
+                    const row = chartData.find(r => r.name === state.activeLabel)
+                    if (row) openDrilldown(row, '')
+                  }}
+                >
                   <CartesianGrid strokeDasharray="3 3" stroke={COLORS.gridLn} vertical={false} />
                   <XAxis dataKey="name" tick={{ fontSize: 11, fill: COLORS.axisTxt }} tickLine={false} axisLine={false} interval={0} angle={chartData.length > 6 ? -30 : 0} textAnchor={chartData.length > 6 ? 'end' : 'middle'} height={chartData.length > 6 ? 70 : 30} />
                   <YAxis tick={{ fontSize: 11, fill: COLORS.axisTxt }} tickLine={false} axisLine={false} allowDecimals={false} />
@@ -775,7 +1025,14 @@ export default function Analytics() {
                       {panel.title}
                     </p>
                     <ResponsiveContainer width="100%" height={isMobile ? 200 : 240}>
-                      <LineChart data={chartData} margin={{ top: 4, right: 8, left: 4, bottom: 0 }}>
+                      <LineChart data={chartData} margin={{ top: 4, right: 8, left: 4, bottom: 0 }}
+                        style={{ cursor: 'pointer' }}
+                        onClick={(state: any) => {
+                          if (!state?.activeLabel) return
+                          const row = chartData.find(r => r.name === state.activeLabel)
+                          if (row) openDrilldown(row, '')
+                        }}
+                      >
                         <CartesianGrid strokeDasharray="3 3" stroke={COLORS.gridLn} vertical={false} />
                         <XAxis dataKey="name" tick={{ fontSize: 10, fill: COLORS.axisTxt }} tickLine={false} axisLine={false} interval={0} angle={chartData.length > 5 ? -30 : 0} textAnchor={chartData.length > 5 ? 'end' : 'middle'} height={chartData.length > 5 ? 60 : 24} />
                         <YAxis tick={{ fontSize: 10, fill: COLORS.axisTxt }} tickLine={false} axisLine={false} allowDecimals={false} width={36} />
@@ -791,6 +1048,17 @@ export default function Analytics() {
               </div>
             )}
           </div>
+
+          {/* Drilldown panel */}
+          {drilldown && (
+            <div ref={drilldownRef}>
+              <DrilldownPanel
+                label={drilldown.label}
+                filters={drilldown.filters}
+                onClose={() => setDrilldown(null)}
+              />
+            </div>
+          )}
 
           {/* Table */}
           {!isLoading && tableRows.length > 0 && (
@@ -808,7 +1076,11 @@ export default function Analytics() {
                 </thead>
                 <tbody>
                   {tableRows.map((row, i) => (
-                    <tr key={i} style={{ borderBottom: `1px solid var(--color-bg4)` }}
+                    <tr key={i} style={{ borderBottom: `1px solid var(--color-bg4)`, cursor: 'pointer' }}
+                      onClick={() => {
+                        const cd = chartData.find(r => r.name === row.name)
+                        if (cd) openDrilldown(cd, '')
+                      }}
                       onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-bg2)')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                       <td className="px-4 py-3 font-medium" style={{ color: 'var(--color-txt1)' }}>{row.name}</td>

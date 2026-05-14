@@ -78,6 +78,7 @@ export async function listTickets(
     buildingId?: string
     floorId?: string
     clientId?: string
+    cemId?: string
     source?: string
     q?: string
     page?: number
@@ -101,6 +102,7 @@ export async function listTickets(
   if (filters.buildingId) where.building_id = filters.buildingId
   if (filters.floorId) where.floor_id = filters.floorId
   if (filters.clientId) where.client_id = filters.clientId
+  if (filters.cemId && actor.role === 'super_admin') where.raised_by = filters.cemId
   if (filters.source) where.source = filters.source as TicketSource
 
   if (filters.from || filters.to) {
