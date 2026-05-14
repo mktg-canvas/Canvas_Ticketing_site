@@ -232,6 +232,19 @@ const GroupedSourceTooltip = ({ active, payload, label }: any) => {
   )
 }
 
+function StackedBarShape(props: any) {
+  const { x, y, width, height, fill, isTop } = props
+  if (!height || height <= 0) return null
+  const r = isTop ? Math.min(5, width / 2, height) : 0
+  if (r === 0) return <rect x={x} y={y} width={width} height={height} fill={fill} />
+  return (
+    <path
+      d={`M${x},${y + height} V${y + r} Q${x},${y} ${x + r},${y} H${x + width - r} Q${x + width},${y} ${x + width},${y + r} V${y + height} Z`}
+      fill={fill}
+    />
+  )
+}
+
 function fmtShort(date?: string | null): string {
   if (!date) return ''
   return new Date(date).toLocaleString('en-IN', {
@@ -959,21 +972,33 @@ export default function Analytics() {
                       />
                       {!grouped ? (
                         <>
-                          <Bar dataKey="Open"        stackId="a" fill={COLORS.open}   radius={[0, 0, 0, 0]} style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'Open')} />
-                          <Bar dataKey="In Progress" stackId="a" fill={COLORS.inProg} radius={[0, 0, 0, 0]} style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'In Progress')} />
-                          <Bar dataKey="Closed"      stackId="a" fill={COLORS.closed} radius={[4, 4, 0, 0]} style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'Closed')} />
+                          <Bar dataKey="Open" stackId="a" fill={COLORS.open} style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'Open')}
+                            shape={(p: any) => <StackedBarShape {...p} fill={COLORS.open}   isTop={!p['In Progress'] && !p.Closed} />} />
+                          <Bar dataKey="In Progress" stackId="a" fill={COLORS.inProg} style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'In Progress')}
+                            shape={(p: any) => <StackedBarShape {...p} fill={COLORS.inProg} isTop={!p.Closed} />} />
+                          <Bar dataKey="Closed" stackId="a" fill={COLORS.closed} style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'Closed')}
+                            shape={(p: any) => <StackedBarShape {...p} fill={COLORS.closed} isTop={true} />} />
                         </>
                       ) : (
                         <>
-                          <Bar dataKey="total_open"    stackId="total"  fill={COLORS.open}   radius={[0, 0, 0, 0]} name="Open"        style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'total_open')} />
-                          <Bar dataKey="total_inprog"  stackId="total"  fill={COLORS.inProg} radius={[0, 0, 0, 0]} name="In Progress" style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'total_inprog')} />
-                          <Bar dataKey="total_closed"  stackId="total"  fill={COLORS.closed} radius={[4, 4, 0, 0]} name="Closed"       style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'total_closed')} />
-                          <Bar dataKey="client_open"   stackId="client" fill={COLORS.open}   radius={[0, 0, 0, 0]} name="Open"        legendType="none" style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'client_open')} />
-                          <Bar dataKey="client_inprog" stackId="client" fill={COLORS.inProg} radius={[0, 0, 0, 0]} name="In Progress" legendType="none" style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'client_inprog')} />
-                          <Bar dataKey="client_closed" stackId="client" fill={COLORS.closed} radius={[4, 4, 0, 0]} name="Closed"       legendType="none" style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'client_closed')} />
-                          <Bar dataKey="cem_open"      stackId="cem"    fill={COLORS.open}   radius={[0, 0, 0, 0]} name="Open"        legendType="none" style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'cem_open')} />
-                          <Bar dataKey="cem_inprog"    stackId="cem"    fill={COLORS.inProg} radius={[0, 0, 0, 0]} name="In Progress" legendType="none" style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'cem_inprog')} />
-                          <Bar dataKey="cem_closed"    stackId="cem"    fill={COLORS.closed} radius={[4, 4, 0, 0]} name="Closed"       legendType="none" style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'cem_closed')} />
+                          <Bar dataKey="total_open"   stackId="total"  fill={COLORS.open}   name="Open"        style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'total_open')}
+                            shape={(p: any) => <StackedBarShape {...p} fill={COLORS.open}   isTop={!p.total_inprog  && !p.total_closed}  />} />
+                          <Bar dataKey="total_inprog" stackId="total"  fill={COLORS.inProg} name="In Progress" style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'total_inprog')}
+                            shape={(p: any) => <StackedBarShape {...p} fill={COLORS.inProg} isTop={!p.total_closed}  />} />
+                          <Bar dataKey="total_closed" stackId="total"  fill={COLORS.closed} name="Closed"      style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'total_closed')}
+                            shape={(p: any) => <StackedBarShape {...p} fill={COLORS.closed} isTop={true} />} />
+                          <Bar dataKey="client_open"   stackId="client" fill={COLORS.open}   name="Open"        legendType="none" style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'client_open')}
+                            shape={(p: any) => <StackedBarShape {...p} fill={COLORS.open}   isTop={!p.client_inprog && !p.client_closed} />} />
+                          <Bar dataKey="client_inprog" stackId="client" fill={COLORS.inProg} name="In Progress" legendType="none" style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'client_inprog')}
+                            shape={(p: any) => <StackedBarShape {...p} fill={COLORS.inProg} isTop={!p.client_closed} />} />
+                          <Bar dataKey="client_closed" stackId="client" fill={COLORS.closed} name="Closed"      legendType="none" style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'client_closed')}
+                            shape={(p: any) => <StackedBarShape {...p} fill={COLORS.closed} isTop={true} />} />
+                          <Bar dataKey="cem_open"   stackId="cem" fill={COLORS.open}   name="Open"        legendType="none" style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'cem_open')}
+                            shape={(p: any) => <StackedBarShape {...p} fill={COLORS.open}   isTop={!p.cem_inprog && !p.cem_closed} />} />
+                          <Bar dataKey="cem_inprog" stackId="cem" fill={COLORS.inProg} name="In Progress" legendType="none" style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'cem_inprog')}
+                            shape={(p: any) => <StackedBarShape {...p} fill={COLORS.inProg} isTop={!p.cem_closed} />} />
+                          <Bar dataKey="cem_closed" stackId="cem" fill={COLORS.closed} name="Closed"      legendType="none" style={{ cursor: 'pointer' }} onClick={(d) => openDrilldown(d, 'cem_closed')}
+                            shape={(p: any) => <StackedBarShape {...p} fill={COLORS.closed} isTop={true} />} />
                         </>
                       )}
                     </BarChart>
