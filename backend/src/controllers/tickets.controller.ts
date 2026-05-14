@@ -55,6 +55,7 @@ export async function listTickets(req: AuthRequest, res: Response): Promise<void
       buildingId: req.query.buildingId as string,
       floorId:    req.query.floorId    as string,
       clientId:   req.query.clientId   as string,
+      cemId:      req.query.cemId      as string,
       source:     req.query.source     as string,
       q:          req.query.q          as string,
       page:       req.query.page ? Number(req.query.page) : 1,

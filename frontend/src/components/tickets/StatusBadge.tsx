@@ -1,7 +1,7 @@
 const STATUS_MAP: Record<string, { bg: string; color: string; dot: string; label: string }> = {
   open:        { bg: 'var(--bg-danger-10)',  color: 'var(--color-danger)',  dot: 'var(--color-danger)',  label: 'Open' },
   in_progress: { bg: 'var(--bg-warning-15)', color: 'var(--color-warning)', dot: 'var(--color-warning)', label: 'In Progress' },
-  closed:      { bg: 'var(--color-bg3)',     color: 'var(--color-txt3)',    dot: 'var(--color-txt3)',    label: 'Closed' },
+  closed:      { bg: 'var(--bg-success-15)', color: 'var(--color-success)', dot: 'var(--color-success)', label: 'Closed' },
 }
 
 export function StatusBadge({ status }: { status: string }) {
