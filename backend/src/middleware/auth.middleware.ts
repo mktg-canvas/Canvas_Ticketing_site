@@ -1,5 +1,6 @@
 import { Response, NextFunction } from 'express'
 import { verifyAccessToken } from '../lib/jwt'
+import { rlsStore } from '../lib/rlsContext'
 import { AuthRequest, Role } from '../types'
 
 export function authenticate(req: AuthRequest, res: Response, next: NextFunction): void {
@@ -12,7 +13,7 @@ export function authenticate(req: AuthRequest, res: Response, next: NextFunction
   const token = authHeader.split(' ')[1]
   try {
     req.user = verifyAccessToken(token)
-    next()
+    rlsStore.run({ userId: req.user.userId, role: req.user.role }, next)
   } catch {
     res.status(401).json({ error: 'Invalid or expired token' })
   }
