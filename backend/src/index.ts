@@ -1,5 +1,5 @@
 import 'dotenv/config'
-import express from 'express'
+import express, { Request, Response, NextFunction } from 'express'
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
 import { generalLimiter } from './middleware/rateLimiter'
@@ -33,6 +33,12 @@ app.use('/api/clients', clientRoutes)
 app.use('/api/tickets', ticketRoutes)
 app.use('/api/categories', categoryRoutes)
 app.use('/api/analytics', analyticsRoutes)
+
+// Global error handler — catches anything not handled by route-level try/catch
+app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  const statusCode = typeof err.status === 'number' ? err.status : 500
+  res.status(statusCode).json({ error: err.message || 'Internal server error' })
+})
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`)
