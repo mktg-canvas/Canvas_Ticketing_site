@@ -1338,6 +1338,7 @@ export default function Analytics() {
                   const useTick = grouped && chartData.length <= 8
                   return (
                     <BarChart data={chartData} margin={{ top: 4, right: 16, left: -8, bottom: 0 }}
+                      accessibilityLayer={false}
                       barCategoryGap="28%" barSize={isMobile ? 14 : 18}>
                       <CartesianGrid strokeDasharray="3 3" stroke={COLORS.gridLn} vertical={false} />
                       <XAxis
@@ -1396,6 +1397,7 @@ export default function Analytics() {
             ) : dimension === 'bySource' ? (
               <ResponsiveContainer width="100%" height={isMobile ? 240 : 300}>
                 <LineChart data={chartData} margin={{ top: 4, right: 16, left: -8, bottom: 0 }}
+                  accessibilityLayer={false}
                   style={{ cursor: 'pointer' }}
                   onClick={(state: any) => {
                     if (!state?.activeLabel) return
@@ -1439,6 +1441,7 @@ export default function Analytics() {
                     </p>
                     <ResponsiveContainer width="100%" height={isMobile ? 200 : 240}>
                       <LineChart data={chartData} margin={{ top: 4, right: 8, left: 4, bottom: 0 }}
+                        accessibilityLayer={false}
                         style={{ cursor: 'pointer' }}
                         onClick={(state: any) => {
                           if (!state?.activeLabel) return

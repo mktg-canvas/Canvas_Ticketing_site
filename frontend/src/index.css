@@ -136,6 +136,39 @@ input, textarea, select {
   ::-webkit-scrollbar-thumb:hover { background: var(--color-accent); }
 }
 
+/* Recharts: remove the ugly focus box, signal clickability, glow on hover */
+.recharts-wrapper,
+.recharts-wrapper *,
+.recharts-surface,
+.recharts-surface * {
+  outline: none !important;
+}
+.recharts-wrapper:focus,
+.recharts-wrapper:focus-visible,
+.recharts-surface:focus,
+.recharts-surface:focus-visible {
+  outline: none !important;
+}
+
+/* Whole chart reads as clickable — override Recharts' inline cursors */
+.recharts-wrapper,
+.recharts-wrapper *,
+.recharts-surface,
+.recharts-surface *,
+.recharts-bar-rectangle,
+.recharts-rectangle,
+.recharts-tooltip-cursor {
+  cursor: pointer !important;
+}
+
+/* Hover glow on the individual bar segment instead of a box */
+.recharts-bar-rectangle {
+  transition: filter .15s ease, opacity .15s ease;
+}
+.recharts-bar-rectangle:hover {
+  filter: brightness(1.1) drop-shadow(0 2px 7px rgba(0, 0, 0, 0.28));
+}
+
 /* Hover effects only on devices that actually have hover (not touch) */
 @media (hover: none) {
   .hover\:shadow-md:hover,
