@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   BarChart2, LineChart as LineChartIcon, TrendingUp, Clock, CheckCircle, Ticket,
   AlertCircle, ChevronDown, Calendar, SlidersHorizontal, X, Download, Loader2,
-  ArrowUpDown,
+  ArrowUpDown, ChevronLeft, ChevronRight,
 } from 'lucide-react'
 import AdminNav from '../../components/shared/AdminNav'
 import html2canvas from 'html2canvas'
@@ -476,7 +476,11 @@ function DrilldownPanel({
   onClose: () => void
 }) {
   const navigate = useNavigate()
-  const cleanFilters = Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== undefined))
+  const panelRef = useRef<HTMLDivElement>(null)
+  // Fetch the full (server-capped) set so sort + priority + paging all apply globally
+  const cleanFilters = Object.fromEntries(
+    Object.entries({ ...filters, noPaginate: 'true' }).filter(([, v]) => v !== undefined)
+  )
   const { data, isLoading } = useTickets(cleanFilters)
   const total = (data as any)?.total ?? 0
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
@@ -492,15 +496,43 @@ function DrilldownPanel({
     })
   }, [data, sortOrder])
 
+  const PAGE_SIZE = 10
+  const [page, setPage] = useState(1)
+  const totalPages = Math.max(1, Math.ceil(tickets.length / PAGE_SIZE))
+  // Reset to first page when the selection or sort changes
+  useEffect(() => { setPage(1) }, [label, sortOrder])
+  // Clamp if the fetched set shrank below the current page
+  useEffect(() => { if (page > totalPages) setPage(totalPages) }, [page, totalPages])
+  const pageTickets = tickets.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
+  function goToPage(p: number) {
+    const next = Math.min(Math.max(1, p), totalPages)
+    setPage(next)
+    panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }
+
+  const pageItems: (number | '…')[] = (() => {
+    const span = 1
+    const out: (number | '…')[] = []
+    for (let p = 1; p <= totalPages; p++) {
+      if (p === 1 || p === totalPages || (p >= page - span && p <= page + span)) {
+        out.push(p)
+      } else if (out[out.length - 1] !== '…') {
+        out.push('…')
+      }
+    }
+    return out
+  })()
+
   return (
-    <div className="border-t" style={{ borderColor: 'var(--color-bg4)' }}>
+    <div ref={panelRef} className="border-t scroll-mt-20" style={{ borderColor: 'var(--color-bg4)' }}>
       <div className="px-4 pt-4 pb-3 flex items-start justify-between gap-3"
         style={{ borderBottom: `1px solid var(--color-bg4)` }}>
         <div>
           <p className="text-sm font-bold" style={{ color: 'var(--color-txt1)' }}>{label}</p>
           {!isLoading && (
             <p className="text-xs mt-0.5" style={{ color: 'var(--color-txt3)' }}>
-              {total} ticket{total !== 1 ? 's' : ''}{total > 20 ? ' · showing first 20' : ''}
+              {total} ticket{total !== 1 ? 's' : ''}{totalPages > 1 ? ` · Page ${page} of ${totalPages}` : ''}
             </p>
           )}
         </div>
@@ -537,7 +569,7 @@ function DrilldownPanel({
         </div>
       ) : (
         <div className="px-4 py-4 flex flex-col gap-2.5">
-          {tickets.map((ticket: any) => {
+          {pageTickets.map((ticket: any) => {
             const category = getCategoryName(ticket.category)
             const badge = SOURCE_BADGE[ticket.source]
             const isOverdue = ticket.status === 'open' && ticket.opened_at
@@ -638,6 +670,57 @@ function DrilldownPanel({
               </div>
             )
           })}
+        </div>
+      )}
+
+      {!isLoading && totalPages > 1 && (
+        <div className="px-4 py-3 flex items-center justify-center gap-1.5 border-t flex-wrap"
+          style={{ borderColor: 'var(--color-bg4)' }}>
+          <button
+            onClick={() => goToPage(page - 1)}
+            disabled={page === 1}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold border"
+            style={{
+              background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)',
+              color: 'var(--color-txt2)', opacity: page === 1 ? 0.4 : 1,
+              cursor: page === 1 ? 'not-allowed' : 'pointer',
+            }}
+          >
+            <ChevronLeft size={13} /> Prev
+          </button>
+
+          {pageItems.map((it, i) =>
+            it === '…' ? (
+              <span key={`gap-${i}`} className="px-1.5 text-xs" style={{ color: 'var(--color-txt3)' }}>…</span>
+            ) : (
+              <button
+                key={it}
+                onClick={() => goToPage(it)}
+                className="min-w-[30px] px-2 py-1.5 rounded-lg text-xs font-bold border"
+                style={{
+                  background: it === page ? 'var(--color-accent)' : 'var(--color-bg1)',
+                  borderColor: it === page ? 'var(--color-accent)' : 'var(--color-bg4)',
+                  color: it === page ? '#fff' : 'var(--color-txt2)',
+                  cursor: 'pointer',
+                }}
+              >
+                {it}
+              </button>
+            )
+          )}
+
+          <button
+            onClick={() => goToPage(page + 1)}
+            disabled={page === totalPages}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold border"
+            style={{
+              background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)',
+              color: 'var(--color-txt2)', opacity: page === totalPages ? 0.4 : 1,
+              cursor: page === totalPages ? 'not-allowed' : 'pointer',
+            }}
+          >
+            Next <ChevronRight size={13} />
+          </button>
         </div>
       )}
     </div>
