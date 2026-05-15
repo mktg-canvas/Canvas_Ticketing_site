@@ -138,7 +138,7 @@ export async function getAnalytics(filters: AnalyticsFilters) {
     prisma.building.findMany({ select: { id: true, name: true } }),
     prisma.category.findMany({ select: { id: true, name: true } }),
     prisma.client.findMany({ select: { id: true, name: true } }),
-    prisma.user.findMany({ where: { role: 'cem' }, select: { id: true, name: true } }),
+    prisma.user.findMany({ select: { id: true, name: true } }),
     prisma.floor.findMany({ include: { building: { select: { name: true } } } }),
     groupByField('building_id', where),
     groupByField('category_id', where),
