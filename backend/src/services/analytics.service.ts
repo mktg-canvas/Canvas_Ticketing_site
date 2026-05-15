@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client'
 import { prisma } from '../lib/prisma'
+import { rlsStore } from '../lib/rlsContext'
 
 export interface AnalyticsFilters {
   from?: Date
@@ -127,7 +128,6 @@ export async function getAnalytics(filters: AnalyticsFilters) {
     byClient,
     byCem,
     byFloor,
-    monthlyRaw,
     bySourceRaw,
   ] = await Promise.all([
     prisma.ticket.groupBy({ by: ['status'], where, _count: { id: true } }),
@@ -145,15 +145,26 @@ export async function getAnalytics(filters: AnalyticsFilters) {
     groupByField('client_id', where),
     groupByField('raised_by', where),
     groupByField('floor_id', where),
-    prisma.$queryRaw<Array<{ month: Date; status: string; source: string; count: number }>>`
-      SELECT DATE_TRUNC('month', created_at) AS month, status, source, COUNT(*)::int AS count
-      FROM tickets
-      ${whereClause}
-      GROUP BY month, status, source
-      ORDER BY month ASC
-    `,
     prisma.ticket.groupBy({ by: ['source', 'status'] as any, where, _count: { id: true } }),
   ])
+
+  // $queryRaw is not intercepted by the Prisma model extension, so RLS context is not
+  // set automatically. Wrap it in a $transaction with an explicit set_config call so the
+  // DB-level RLS policy can evaluate correctly.
+  const ctx = rlsStore.getStore()
+  const monthlyQuery = prisma.$queryRaw<Array<{ month: Date; status: string; source: string; count: number }>>`
+    SELECT DATE_TRUNC('month', created_at) AS month, status, source, COUNT(*)::int AS count
+    FROM tickets
+    ${whereClause}
+    GROUP BY month, status, source
+    ORDER BY month ASC
+  `
+  const monthlyRaw: Array<{ month: Date; status: string; source: string; count: number }> = ctx
+    ? await prisma.$transaction([
+        prisma.$executeRaw`SELECT set_config('app.current_user_id', ${ctx.userId}, TRUE), set_config('app.current_user_role', ${ctx.role}, TRUE)`,
+        monthlyQuery,
+      ]).then(([, rows]) => rows as Array<{ month: Date; status: string; source: string; count: number }>)
+    : await monthlyQuery
 
   // Summary
   const summary = { total: 0, open: 0, in_progress: 0, closed: 0, avgResolutionHours: null as number | null }

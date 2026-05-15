@@ -99,6 +99,16 @@ export function useUploadAttachment() {
   })
 }
 
+export function useDeleteAttachment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ ticketId, attachmentId }: { ticketId: string; attachmentId: string }) => {
+      await api.delete(`/tickets/${ticketId}/attachments/${attachmentId}`)
+    },
+    onSuccess: (_d, { ticketId }) => qc.invalidateQueries({ queryKey: ['ticket', ticketId] }),
+  })
+}
+
 export function useUpdateStageNote() {
   const qc = useQueryClient()
   return useMutation({

@@ -1,6 +1,6 @@
 import { Prisma, TicketStatus, TicketSource } from '@prisma/client'
 import { prisma } from '../lib/prisma'
-import { uploadFile } from '../lib/supabaseStorage'
+import { uploadFile, deleteFile } from '../lib/supabaseStorage'
 import { JwtPayload } from '../types'
 
 export async function createTicket(
@@ -276,6 +276,23 @@ export async function uploadAttachment(actor: JwtPayload, ticketId: string, file
     },
   })
   return attachment
+}
+
+export async function deleteAttachment(actor: JwtPayload, ticketId: string, attachmentId: string) {
+  const attachment = await prisma.attachment.findUnique({ where: { id: attachmentId } })
+  if (!attachment) throw { status: 404, message: 'Attachment not found' }
+  if (attachment.ticket_id !== ticketId) throw { status: 404, message: 'Attachment not found' }
+
+  if (attachment.file_url) await deleteFile(attachment.file_url)
+  await prisma.attachment.delete({ where: { id: attachmentId } })
+  await prisma.ticketActivity.create({
+    data: {
+      ticket_id: ticketId,
+      actor_id: actor.userId,
+      activity_type: 'attachment_deleted',
+      new_value: attachment.file_name,
+    },
+  })
 }
 
 export async function updateStageNote(
