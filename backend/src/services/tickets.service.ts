@@ -127,7 +127,7 @@ export async function listTickets(
       category: { select: { id: true, name: true, slug: true } },
       _count: { select: { attachments: true } },
     },
-    orderBy: { created_at: 'desc' },
+    orderBy: [{ is_priority: 'desc' }, { created_at: 'desc' }],
   }
 
   if (filters.q) {

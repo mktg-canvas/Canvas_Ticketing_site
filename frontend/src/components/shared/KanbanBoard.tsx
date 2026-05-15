@@ -179,6 +179,10 @@ export default function KanbanBoard({ linkPrefix }: Props) {
   const allTickets: any[] = useMemo(() => {
     const tickets: any[] = data?.tickets || []
     return [...tickets].sort((a, b) => {
+      // Priority tickets always pinned to the top, regardless of sort order
+      const ap = a.is_priority ? 1 : 0
+      const bp = b.is_priority ? 1 : 0
+      if (ap !== bp) return bp - ap
       const diff = new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       return sortOrder === 'asc' ? diff : -diff
     })

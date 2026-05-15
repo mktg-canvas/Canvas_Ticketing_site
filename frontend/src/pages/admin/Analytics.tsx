@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   BarChart2, LineChart as LineChartIcon, TrendingUp, Clock, CheckCircle, Ticket,
   AlertCircle, ChevronDown, Calendar, SlidersHorizontal, X, Download, Loader2,
+  ArrowUpDown,
 } from 'lucide-react'
 import AdminNav from '../../components/shared/AdminNav'
 import html2canvas from 'html2canvas'
@@ -477,8 +478,19 @@ function DrilldownPanel({
   const navigate = useNavigate()
   const cleanFilters = Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== undefined))
   const { data, isLoading } = useTickets(cleanFilters)
-  const tickets = (data as any)?.tickets ?? []
   const total = (data as any)?.total ?? 0
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+  const tickets = useMemo(() => {
+    const list: any[] = (data as any)?.tickets ?? []
+    return [...list].sort((a, b) => {
+      // Priority tickets always pinned to the top, regardless of sort order
+      const ap = a.is_priority ? 1 : 0
+      const bp = b.is_priority ? 1 : 0
+      if (ap !== bp) return bp - ap
+      const diff = new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      return sortOrder === 'asc' ? diff : -diff
+    })
+  }, [data, sortOrder])
 
   return (
     <div className="border-t" style={{ borderColor: 'var(--color-bg4)' }}>
@@ -492,15 +504,26 @@ function DrilldownPanel({
             </p>
           )}
         </div>
-        <button
-          onClick={onClose}
-          className="p-1.5 rounded-full shrink-0"
-          style={{ color: 'var(--color-txt3)', background: 'var(--color-bg3)' }}
-          onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-bg4)')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'var(--color-bg3)')}
-        >
-          <X size={13} />
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => setSortOrder(o => o === 'asc' ? 'desc' : 'asc')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border"
+            style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)', color: 'var(--color-txt2)' }}
+            title={sortOrder === 'asc' ? 'Oldest first (FIFO)' : 'Newest first'}
+          >
+            <ArrowUpDown size={12} />
+            {sortOrder === 'asc' ? 'Oldest first' : 'Newest first'}
+          </button>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-full"
+            style={{ color: 'var(--color-txt3)', background: 'var(--color-bg3)' }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-bg4)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'var(--color-bg3)')}
+          >
+            <X size={13} />
+          </button>
+        </div>
       </div>
       {isLoading ? (
         <div className="px-4 py-4 flex flex-col gap-2.5">
@@ -641,7 +664,7 @@ export default function Analytics() {
   const [expandedCem, setExpandedCem] = useState<EntityExpanded>(null)
   const [expandedClient, setExpandedClient] = useState<EntityExpanded>(null)
   const [expandedBuilding, setExpandedBuilding] = useState<EntityExpanded>(null)
-  const [expandedKpi, setExpandedKpi] = useState<{ status: 'open' | 'in_progress' | 'closed'; source?: 'client' | 'cem' } | null>(null)
+  const [expandedKpi, setExpandedKpi] = useState<{ status?: 'open' | 'in_progress' | 'closed'; source?: 'client' | 'cem' } | null>(null)
 
   const dateRange = useMemo(
     () => computeRange(preset, customFrom, customTo),
@@ -984,8 +1007,20 @@ export default function Analytics() {
                 const cemRow    = data.bySource.find((r: any) => r.id === 'cem')
                 return (
                   <>
-                    <StatCard label="Total Tickets" value={data.summary.total} icon={Ticket}
-                      clientN={clientRow?.total ?? 0} cemN={cemRow?.total ?? 0} />
+                    {(() => {
+                      const isTotalExp = !!expandedKpi && !expandedKpi.status
+                      return (
+                        <StatCard label="Total Tickets" value={data.summary.total} icon={Ticket}
+                          clientN={clientRow?.total ?? 0} cemN={cemRow?.total ?? 0}
+                          isExpanded={isTotalExp}
+                          activeSource={isTotalExp ? (expandedKpi?.source ?? null) : null}
+                          onClick={() => setExpandedKpi(isTotalExp && !expandedKpi?.source ? null : {})}
+                          onPillClick={src => setExpandedKpi(
+                            isTotalExp && expandedKpi?.source === src ? {} : { source: src }
+                          )}
+                        />
+                      )
+                    })()}
                     {(['open', 'in_progress', 'closed'] as const).map(st => {
                       const isExp = expandedKpi?.status === st
                       const cfg = {
@@ -1013,10 +1048,10 @@ export default function Analytics() {
               <div className="rounded-2xl border overflow-hidden" style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}>
                 <DrilldownPanel
                   label={[
-                    expandedKpi.status === 'open' ? 'Open' : expandedKpi.status === 'in_progress' ? 'In Progress' : 'Closed',
+                    expandedKpi.status === 'open' ? 'Open' : expandedKpi.status === 'in_progress' ? 'In Progress' : expandedKpi.status === 'closed' ? 'Closed' : 'All',
                     expandedKpi.source === 'client' ? 'Client Reported' : expandedKpi.source === 'cem' ? 'CEM Observed' : null,
                   ].filter(Boolean).join(' · ') + ' Tickets'}
-                  filters={{ ...filters, status: expandedKpi.status, ...(expandedKpi.source && { source: expandedKpi.source }) }}
+                  filters={{ ...filters, ...(expandedKpi.status && { status: expandedKpi.status }), ...(expandedKpi.source && { source: expandedKpi.source }) }}
                   onClose={() => setExpandedKpi(null)}
                 />
               </div>
