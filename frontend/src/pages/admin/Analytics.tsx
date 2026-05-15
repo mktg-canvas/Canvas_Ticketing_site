@@ -245,6 +245,154 @@ function StackedBarShape(props: any) {
   )
 }
 
+type EntityExpanded = { id: string; status?: string; source?: string } | null
+
+function EntityCard({
+  row, expanded, onCardClick, onPillClick, total,
+}: {
+  row: DimRow
+  expanded: EntityExpanded
+  onCardClick: () => void
+  onPillClick: (extra: { status?: string; source?: string }) => void
+  total: number
+}) {
+  const isExpanded = expanded?.id === row.id
+  const activeStatus = isExpanded ? expanded?.status : undefined
+  const activeSource = isExpanded ? expanded?.source : undefined
+
+  function pill(
+    label: string,
+    color: string,
+    borderAlpha: string,
+    bgAlpha: string,
+    extra: { status?: string; source?: string },
+  ) {
+    const isActive = (extra.status && activeStatus === extra.status) ||
+                     (extra.source && activeSource === extra.source)
+    return (
+      <span
+        onClick={e => { e.stopPropagation(); onPillClick(extra) }}
+        className="px-2 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap cursor-pointer"
+        style={{
+          color,
+          borderColor: isActive ? color : borderAlpha,
+          background: isActive ? `${color}28` : bgAlpha,
+          boxShadow: isActive ? `0 0 0 1.5px ${color}` : 'none',
+          transition: 'all .12s',
+        }}
+      >
+        {label}
+      </span>
+    )
+  }
+
+  return (
+    <div
+      onClick={onCardClick}
+      className="shrink-0 rounded-2xl border cursor-pointer select-none flex flex-col"
+      style={{
+        width: 200,
+        background: isExpanded ? 'var(--color-bg3)' : 'var(--color-bg0)',
+        borderColor: isExpanded ? 'var(--color-accent)' : 'var(--color-bg4)',
+        borderWidth: isExpanded ? 1.5 : 1,
+        transition: 'border-color .15s, background .15s',
+        overflow: 'hidden',
+      }}
+      onMouseEnter={e => { if (!isExpanded) (e.currentTarget as HTMLDivElement).style.background = 'var(--color-bg2)' }}
+      onMouseLeave={e => { if (!isExpanded) (e.currentTarget as HTMLDivElement).style.background = 'var(--color-bg0)' }}
+    >
+      {/* Name + total */}
+      <div className="px-3 pt-3 pb-2.5">
+        <p className="text-xs font-extrabold truncate mb-1.5" style={{ color: 'var(--color-txt1)' }}>{row.name}</p>
+        <p className="text-2xl font-bold leading-none" style={{ color: 'var(--color-txt1)' }}>{row.total}</p>
+      </div>
+
+      {/* Status line */}
+      <div className="px-3 py-2 flex items-center gap-1.5" style={{ borderTop: '1px solid var(--color-bg4)' }}>
+        {pill(`${row.open} Open`,    '#ef4444', '#ef444440', '#ef444412', { status: 'open' })}
+        {pill(`${row.in_progress} IP`, '#f59e0b', '#f59e0b40', '#f59e0b12', { status: 'in_progress' })}
+        {pill(`${row.closed} Closed`, '#10b981', '#10b98140', '#10b98112', { status: 'closed' })}
+      </div>
+
+      {/* Source line */}
+      <div className="px-3 py-2 flex items-center gap-1.5" style={{ borderTop: '1px solid var(--color-bg4)' }}>
+        {pill(`Client ${row.client_total}`, '#f97316', '#f9731640', '#f9731612', { source: 'client' })}
+        {pill(`CEM ${row.cem_total}`,       '#06b6d4', '#06b6d440', '#06b6d412', { source: 'cem' })}
+      </div>
+    </div>
+  )
+}
+
+function EntityCardRow({
+  label, rows, expanded, onExpand, totalTickets, isLoading, filterKey, extraFilters,
+}: {
+  label: string
+  rows: DimRow[]
+  expanded: EntityExpanded
+  onExpand: (v: EntityExpanded) => void
+  totalTickets: number
+  isLoading: boolean
+  filterKey: 'cemId' | 'clientId' | 'buildingId'
+  extraFilters: Record<string, string | undefined>
+}) {
+  const expandedRow = expanded ? (rows.find(r => r.id === expanded.id) ?? null) : null
+
+  const drilldownLabel = expandedRow ? [
+    expandedRow.name,
+    expanded?.status === 'open' ? 'Open' : expanded?.status === 'in_progress' ? 'In Progress' : expanded?.status === 'closed' ? 'Closed' : null,
+    expanded?.source === 'client' ? 'Client Reported' : expanded?.source === 'cem' ? 'CEM Observed' : null,
+  ].filter(Boolean).join(' · ') : ''
+
+  return (
+    <div className="rounded-2xl border overflow-hidden" style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}>
+      <div className="px-4 py-2.5 border-b flex items-center justify-between"
+        style={{ borderColor: 'var(--color-bg4)' }}>
+        <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-txt3)' }}>{label}</p>
+        {!isLoading && rows.length > 0 && (
+          <p className="text-xs" style={{ color: 'var(--color-txt3)' }}>{rows.length} {rows.length === 1 ? label.slice(0, -1) : label}</p>
+        )}
+      </div>
+      {isLoading ? (
+        <div className="px-3 py-3 flex gap-3">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="shrink-0 rounded-2xl h-36 w-44 animate-pulse" style={{ background: 'var(--color-bg3)' }} />
+          ))}
+        </div>
+      ) : rows.length === 0 ? (
+        <div className="px-4 py-4">
+          <p className="text-xs" style={{ color: 'var(--color-txt3)' }}>No data in this period</p>
+        </div>
+      ) : (
+        <div className="px-3 py-3 flex gap-3 overflow-x-auto"
+          style={{ scrollbarWidth: 'thin', scrollbarColor: 'var(--color-bg4) transparent' }}>
+          {rows.map(row => (
+            <EntityCard
+              key={row.id}
+              row={row}
+              expanded={expanded}
+              onCardClick={() => onExpand(expanded?.id === row.id ? null : { id: row.id })}
+              onPillClick={extra => onExpand({ id: row.id, ...extra })}
+              total={totalTickets}
+            />
+          ))}
+        </div>
+      )}
+      {expandedRow && (
+        <DrilldownPanel
+          label={drilldownLabel}
+          filters={{
+            [filterKey]: expandedRow.id,
+            ...(expanded?.status && { status: expanded.status }),
+            ...(expanded?.source && { source: expanded.source }),
+            ...extraFilters,
+          }}
+          onClose={() => onExpand(null)}
+        />
+      )}
+    </div>
+  )
+}
+
 function fmtShort(date?: string | null): string {
   if (!date) return ''
   return new Date(date).toLocaleString('en-IN', {
@@ -442,6 +590,9 @@ export default function Analytics() {
   const [cemId, setCemId] = useState('')
   const [source, setSource] = useState<'all' | 'client' | 'cem'>('all')
   const [drilldown, setDrilldown] = useState<DrilldownState | null>(null)
+  const [expandedCem, setExpandedCem] = useState<EntityExpanded>(null)
+  const [expandedClient, setExpandedClient] = useState<EntityExpanded>(null)
+  const [expandedBuilding, setExpandedBuilding] = useState<EntityExpanded>(null)
 
   const dateRange = useMemo(
     () => computeRange(preset, customFrom, customTo),
@@ -458,6 +609,7 @@ export default function Analytics() {
   const hasFilter = !!(buildingId || clientId || categoryId || cemId)
 
   useEffect(() => { setDrilldown(null) }, [dimension])
+  useEffect(() => { setExpandedCem(null); setExpandedClient(null); setExpandedBuilding(null) }, [filters])
 
   function openDrilldown(rowData: any, dataKey: string) {
     const KEY_MAP: Record<string, { status?: string; barSource?: string }> = {
@@ -528,7 +680,7 @@ export default function Analytics() {
   const { data: clients = [] } = useClients()
   const { data: categories = [] } = useCategories()
   const { data: allUsers = [] } = useUsers()
-  const cems = allUsers.filter((u: any) => u.role === 'cem')
+  const cems = allUsers
 
   const chartData = useMemo(() => {
     if (!data) return []
@@ -783,6 +935,49 @@ export default function Analytics() {
           </div>
         ) : null}
 
+        {/* Entity card rows */}
+        {(() => {
+          const extraFilters: Record<string, string | undefined> = {
+            ...(dateRange.from && { from: dateRange.from }),
+            ...(dateRange.to   && { to:   dateRange.to }),
+            ...(source !== 'all' && { source }),
+          }
+          return (
+            <>
+              <EntityCardRow
+                label="CEMs"
+                rows={data?.byCem ?? []}
+                expanded={expandedCem}
+                onExpand={setExpandedCem}
+                totalTickets={data?.summary.total ?? 0}
+                isLoading={isLoading}
+                filterKey="cemId"
+                extraFilters={extraFilters}
+              />
+              <EntityCardRow
+                label="Clients"
+                rows={data?.byClient ?? []}
+                expanded={expandedClient}
+                onExpand={setExpandedClient}
+                totalTickets={data?.summary.total ?? 0}
+                isLoading={isLoading}
+                filterKey="clientId"
+                extraFilters={extraFilters}
+              />
+              <EntityCardRow
+                label="Buildings"
+                rows={data?.byBuilding ?? []}
+                expanded={expandedBuilding}
+                onExpand={setExpandedBuilding}
+                totalTickets={data?.summary.total ?? 0}
+                isLoading={isLoading}
+                filterKey="buildingId"
+                extraFilters={extraFilters}
+              />
+            </>
+          )
+        })()}
+
         {/* Dimension tabs */}
         <div className="rounded-2xl border overflow-hidden"
           style={{ background: 'var(--color-bg1)', borderColor: 'var(--color-bg4)' }}>
@@ -833,7 +1028,7 @@ export default function Analytics() {
               <FilterSelect value={categoryId} onChange={setCategoryId} placeholder="All Categories">
                 {categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </FilterSelect>
-              <FilterSelect value={cemId} onChange={setCemId} placeholder="All CEMs">
+              <FilterSelect value={cemId} onChange={setCemId} placeholder="All Raisers">
                 {cems.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}
               </FilterSelect>
               {hasFilter && (
