@@ -25,6 +25,14 @@ export async function uploadFile(
   return data.publicUrl
 }
 
+export async function deleteFile(fileUrl: string): Promise<void> {
+  const bucket = process.env.SUPABASE_STORAGE_BUCKET!
+  const baseUrl = supabase.storage.from(bucket).getPublicUrl('').data.publicUrl.replace(/[^/]+$/, '')
+  const path = fileUrl.startsWith(baseUrl) ? fileUrl.slice(baseUrl.length) : fileUrl
+  const { error } = await supabase.storage.from(bucket).remove([path])
+  if (error) throw new Error(error.message)
+}
+
 export async function getSignedUrl(path: string): Promise<string> {
   const { data, error } = await supabase.storage
     .from(process.env.SUPABASE_STORAGE_BUCKET!)

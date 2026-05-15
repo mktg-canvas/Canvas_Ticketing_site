@@ -50,11 +50,17 @@ function MiniCard({ ticket, linkTo }: MiniCardProps) {
       <div className="px-3 py-2.5 flex gap-2">
         {/* Left: 3 lines */}
         <div className="flex-1 min-w-0">
-          {/* Line 1: #number + category + source badge */}
+          {/* Line 1: #number + priority + category + source badge */}
           <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
             <span className="font-bold text-xs shrink-0" style={{ color: 'var(--color-txt1)' }}>
               #{ticket.ticket_number}
             </span>
+            {ticket.is_priority && (
+              <span className="w-4 h-4 rounded-full flex items-center justify-center shrink-0 text-[9px] font-extrabold"
+                style={{ background: '#ef4444', color: '#fff' }}>
+                P
+              </span>
+            )}
             <span className="text-xs capitalize truncate" style={{ color: 'var(--color-txt2)' }}>
               {category}
             </span>

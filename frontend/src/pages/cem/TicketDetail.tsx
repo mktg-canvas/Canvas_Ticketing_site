@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Building2, Layers, Briefcase, User, Clock, FileText, Image as ImageIcon, CheckCircle, MapPin, Pencil, Trash2, ChevronDown, Camera, Plus, AlertTriangle, NotebookPen } from 'lucide-react'
-import { useTicket, useUpdateStatus, useEditTicket, useDeleteTicket, useUploadAttachment, useUpdateStageNote } from '../../hooks/useTickets'
+import { useTicket, useUpdateStatus, useEditTicket, useDeleteTicket, useUploadAttachment, useDeleteAttachment, useUpdateStageNote } from '../../hooks/useTickets'
 import { useBuildings } from '../../hooks/useBuildings'
 import { useFloors } from '../../hooks/useFloors'
 import { useClients } from '../../hooks/useClients'
@@ -83,6 +83,7 @@ export default function CemTicketDetail() {
   const { mutateAsync: editTicket, isPending: editing } = useEditTicket()
   const { mutateAsync: deleteTicket, isPending: deleting } = useDeleteTicket()
   const { mutateAsync: uploadAttachment, isPending: uploading } = useUploadAttachment()
+  const { mutateAsync: deleteAttachment, isPending: deletingAttachment } = useDeleteAttachment()
   const { mutateAsync: saveStageNote, isPending: savingNote } = useUpdateStageNote()
   const stageFileRef = useRef<HTMLInputElement>(null)
   const [uploadingStage, setUploadingStage] = useState<string | null>(null)
@@ -226,6 +227,12 @@ export default function CemTicketDetail() {
               style={{ background: 'var(--color-bg3)', color: 'var(--color-txt2)' }}>
               #{ticket.ticket_number}
             </span>
+            {ticket.is_priority && (
+              <span className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px] font-extrabold"
+                style={{ background: '#ef4444', color: '#fff' }}>
+                P
+              </span>
+            )}
             <StatusBadge status={ticket.status} />
           </div>
 
@@ -417,17 +424,31 @@ export default function CemTicketDetail() {
                     {stagePhotos.length > 0 ? (
                       <div className="grid grid-cols-3 gap-2 mb-1">
                         {stagePhotos.map((a: any) => (
-                          <a key={a.id} href={a.file_url} target="_blank" rel="noreferrer"
-                            className="rounded-xl overflow-hidden aspect-square border block transition-opacity hover:opacity-90"
+                          <div key={a.id} className="relative group rounded-xl overflow-hidden aspect-square border"
                             style={{ background: 'var(--color-bg3)', borderColor: 'var(--color-bg4)' }}>
-                            {a.mime_type?.startsWith('image/')
-                              ? <img src={a.file_url} alt={a.file_name || ''} className="w-full h-full object-cover" />
-                              : <div className="w-full h-full flex flex-col items-center justify-center gap-1">
-                                  <ImageIcon size={16} style={{ color: 'var(--color-txt3)' }} />
-                                  <span className="text-xs" style={{ color: 'var(--color-txt3)' }}>File</span>
-                                </div>
-                            }
-                          </a>
+                            <a href={a.file_url} target="_blank" rel="noreferrer"
+                              className="block w-full h-full transition-opacity hover:opacity-90">
+                              {a.mime_type?.startsWith('image/')
+                                ? <img src={a.file_url} alt={a.file_name || ''} className="w-full h-full object-cover" />
+                                : <div className="w-full h-full flex flex-col items-center justify-center gap-1">
+                                    <ImageIcon size={16} style={{ color: 'var(--color-txt3)' }} />
+                                    <span className="text-xs" style={{ color: 'var(--color-txt3)' }}>File</span>
+                                  </div>
+                              }
+                            </a>
+                            <button
+                              onClick={() => {
+                                if (!window.confirm('Delete this photo?')) return
+                                deleteAttachment({ ticketId: id!, attachmentId: a.id })
+                              }}
+                              disabled={deletingAttachment}
+                              className="absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-30"
+                              style={{ background: 'rgba(0,0,0,0.6)', color: '#fff' }}
+                              title="Delete photo"
+                            >
+                              <Trash2 size={10} />
+                            </button>
+                          </div>
                         ))}
                         <button onClick={() => openStageUpload(step.key)} disabled={isUploading}
                           className="rounded-xl aspect-square border-2 border-dashed flex items-center justify-center disabled:opacity-50"
