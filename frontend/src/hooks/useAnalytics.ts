@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import api from '../lib/axios'
 import { useAuthStore } from '../store/authStore'
 
@@ -80,7 +80,9 @@ export function useAnalytics(filters: AnalyticsFilters) {
       const res = await api.get(`/analytics?${params.toString()}`)
       return res.data
     },
-    staleTime: 60_000,
+    staleTime: 300_000,
+    gcTime: 600_000,
+    placeholderData: keepPreviousData,
     retry: false,
     enabled: !!accessToken,
   })

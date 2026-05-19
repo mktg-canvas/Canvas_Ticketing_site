@@ -8,6 +8,7 @@ export function useUsers() {
       const { data } = await api.get('/users')
       return data.users
     },
+    staleTime: 300_000,
   })
 }
 

@@ -117,7 +117,6 @@ export async function getAnalytics(filters: AnalyticsFilters) {
 
   const [
     statusCounts,
-    closedWithTimes,
     buildings,
     categories,
     clients,
@@ -131,14 +130,10 @@ export async function getAnalytics(filters: AnalyticsFilters) {
     bySourceRaw,
   ] = await Promise.all([
     prisma.ticket.groupBy({ by: ['status'], where, _count: { id: true } }),
-    prisma.ticket.findMany({
-      where: { ...where, closed_at: { not: null }, opened_at: { not: null } },
-      select: { opened_at: true, closed_at: true },
-    }),
     prisma.building.findMany({ select: { id: true, name: true } }),
     prisma.category.findMany({ select: { id: true, name: true } }),
     prisma.client.findMany({ select: { id: true, name: true } }),
-    prisma.user.findMany({ select: { id: true, name: true } }),
+    prisma.user.findMany({ where: { role: 'cem' }, select: { id: true, name: true } }),
     prisma.floor.findMany({ include: { building: { select: { name: true } } } }),
     groupByField('building_id', where),
     groupByField('category_id', where),
@@ -149,9 +144,10 @@ export async function getAnalytics(filters: AnalyticsFilters) {
   ])
 
   // $queryRaw is not intercepted by the Prisma model extension, so RLS context is not
-  // set automatically. Wrap it in a $transaction with an explicit set_config call so the
-  // DB-level RLS policy can evaluate correctly.
+  // set automatically. Wrap both raw queries in one $transaction with an explicit set_config
+  // call so the DB-level RLS policy can evaluate correctly.
   const ctx = rlsStore.getStore()
+
   const monthlyQuery = prisma.$queryRaw<Array<{ month: Date; status: string; source: string; count: number }>>`
     SELECT DATE_TRUNC('month', created_at) AS month, status, source, COUNT(*)::int AS count
     FROM tickets
@@ -159,12 +155,35 @@ export async function getAnalytics(filters: AnalyticsFilters) {
     GROUP BY month, status, source
     ORDER BY month ASC
   `
-  const monthlyRaw: Array<{ month: Date; status: string; source: string; count: number }> = ctx
-    ? await prisma.$transaction([
-        prisma.$executeRaw`SELECT set_config('app.current_user_id', ${ctx.userId}, TRUE), set_config('app.current_user_role', ${ctx.role}, TRUE)`,
-        monthlyQuery,
-      ]).then(([, rows]) => rows as Array<{ month: Date; status: string; source: string; count: number }>)
-    : await monthlyQuery
+
+  const avgConditions = [
+    Prisma.sql`closed_at IS NOT NULL`,
+    Prisma.sql`opened_at IS NOT NULL`,
+    ...sqlConditions,
+  ]
+  const avgQuery = prisma.$queryRaw<[{ avg_hours: string | null }]>`
+    SELECT ROUND(AVG(EXTRACT(EPOCH FROM (closed_at - opened_at)) / 3600)::numeric, 1) AS avg_hours
+    FROM tickets
+    WHERE ${Prisma.join(avgConditions, ' AND ')}
+  `
+
+  let monthlyRaw: Array<{ month: Date; status: string; source: string; count: number }>
+  let avgHours: number | null = null
+
+  if (ctx) {
+    const results = await prisma.$transaction([
+      prisma.$executeRaw`SELECT set_config('app.current_user_id', ${ctx.userId}, TRUE), set_config('app.current_user_role', ${ctx.role}, TRUE)`,
+      monthlyQuery,
+      avgQuery,
+    ])
+    monthlyRaw = results[1] as Array<{ month: Date; status: string; source: string; count: number }>
+    const avgRow = (results[2] as [{ avg_hours: string | null }])[0]
+    avgHours = avgRow?.avg_hours != null ? Number(avgRow.avg_hours) : null
+  } else {
+    const [monthly, avgResult] = await Promise.all([monthlyQuery, avgQuery])
+    monthlyRaw = monthly
+    avgHours = avgResult[0]?.avg_hours != null ? Number(avgResult[0].avg_hours) : null
+  }
 
   // Summary
   const summary = { total: 0, open: 0, in_progress: 0, closed: 0, avgResolutionHours: null as number | null }
@@ -174,11 +193,7 @@ export async function getAnalytics(filters: AnalyticsFilters) {
     else if (r.status === 'closed') summary.closed = r._count.id
     summary.total += r._count.id
   }
-  if (closedWithTimes.length > 0) {
-    const totalHours = closedWithTimes.reduce((sum, t) =>
-      sum + (t.closed_at!.getTime() - t.opened_at!.getTime()) / 3_600_000, 0)
-    summary.avgResolutionHours = Math.round((totalHours / closedWithTimes.length) * 10) / 10
-  }
+  summary.avgResolutionHours = avgHours
 
   // Dimension rows
   function toDimRows(map: Map<string, any>, lookup: { id: string; name: string }[], extraName?: (id: string) => string): DimRow[] {

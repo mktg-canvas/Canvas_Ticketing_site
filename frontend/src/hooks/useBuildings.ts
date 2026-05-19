@@ -8,6 +8,7 @@ export function useBuildings() {
       const { data } = await api.get('/buildings')
       return data.buildings
     },
+    staleTime: 300_000,
   })
 }
 
