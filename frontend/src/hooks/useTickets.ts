@@ -9,6 +9,7 @@ export function useTickets(filters: Record<string, string | number | boolean | u
       const { data } = await api.get('/tickets', { params })
       return data
     },
+    staleTime: 30_000,
   })
 }
 

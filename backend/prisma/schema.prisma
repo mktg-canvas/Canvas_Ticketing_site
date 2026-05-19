@@ -150,6 +150,17 @@ model Ticket {
   activities  TicketActivity[]
   attachments Attachment[]
 
+  // Primary sort index used by listTickets ORDER BY is_priority DESC, created_at DESC
+  @@index([is_priority(sort: Desc), created_at(sort: Desc)])
+  // Status filter (used in almost every query)
+  @@index([status, is_priority(sort: Desc), created_at(sort: Desc)])
+  // Analytics groupBy and dimension filters
+  @@index([building_id, status, source])
+  @@index([category_id, status, source])
+  @@index([client_id, status, source])
+  @@index([raised_by, status, source])
+  @@index([floor_id, status, source])
+  // Date-range scans (keep existing)
   @@index([created_at(sort: Desc)])
   @@map("tickets")
 }

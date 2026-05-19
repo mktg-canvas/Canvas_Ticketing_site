@@ -8,5 +8,6 @@ export function useCategories() {
       const { data } = await api.get('/categories')
       return data.categories as { id: string; name: string; slug: string }[]
     },
+    staleTime: 300_000,
   })
 }
