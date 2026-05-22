@@ -8,7 +8,7 @@ const LOCK_PREFIX = 'lock:'
 const FAILED_PREFIX = 'failed:'
 const OTP_PREFIX = 'otp:'
 const REFRESH_PREFIX = 'refresh:'
-const MAX_ATTEMPTS = 5
+const MAX_ATTEMPTS = 10
 const LOCK_DURATION = 15 * 60
 
 export async function loginUser(email: string, password: string) {
