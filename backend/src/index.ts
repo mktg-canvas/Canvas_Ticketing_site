@@ -11,6 +11,7 @@ import clientRoutes from './routes/clients.routes'
 import ticketRoutes from './routes/tickets.routes'
 import categoryRoutes from './routes/categories.routes'
 import analyticsRoutes from './routes/analytics.routes'
+import { startCronJobs } from './cron'
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -42,6 +43,7 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`)
+  startCronJobs()
 })
 
 export default app
