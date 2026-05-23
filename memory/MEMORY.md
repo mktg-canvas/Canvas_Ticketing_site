@@ -1,3 +1,3 @@
 # Memory Index
 
-- [Canvas Ticketing Site - Project Overview](project_overview.md) — Full-stack FM ticketing app: Express+Prisma backend on Railway, React+Vite frontend on Vercel, two roles (fm/super_admin), JWT+Redis auth
+- [Canvas](canvas.md) — Complete reference: stack, domain model, roles, ticket lifecycle, ClientLocation flow, analytics, auth, SLA, and key rules
