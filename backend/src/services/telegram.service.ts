@@ -2,11 +2,11 @@ import axios from 'axios'
 import { prisma } from '../lib/prisma'
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN!
-const CHAT_ID   = process.env.TELEGRAM_CHAT_ID!
+const CHAT_ID = process.env.TELEGRAM_CHAT_ID!
 
 // Table column widths (JS string length, not visual — emojis like 🔴🟡🟢📊 are 2 JS chars = 2 visual)
 const LABEL_W = 14  // fits "🟡 In Progress" exactly (2+1+11 = 14)
-const NUM_W   = 5
+const NUM_W = 5
 
 function center(text: string, width: number): string {
   const pad = width - text.length
@@ -16,11 +16,11 @@ function center(text: string, width: number): string {
 }
 
 function makeTable(title: string, rows: [string, number][]): string {
-  const top    = `┌${'─'.repeat(24)}┐`
+  const top = `┌${'─'.repeat(24)}┐`
   const header = `│ ${center(title, 23)}│`
-  const mid    = `├${'─'.repeat(16)}┬${'─'.repeat(7)}┤`
+  const mid = `├${'─'.repeat(16)}┬${'─'.repeat(7)}┤`
   const bottom = `└${'─'.repeat(16)}┴${'─'.repeat(7)}┘`
-  const row    = (label: string, value: number) =>
+  const row = (label: string, value: number) =>
     `│ ${label.padEnd(LABEL_W)} │ ${String(value).padStart(NUM_W)} │`
 
   return [top, header, mid, ...rows.map(([l, v]) => row(l, v)), bottom].join('\n')
@@ -76,15 +76,15 @@ async function buildAndSendReport(days: number): Promise<void> {
   const rangeLabel = isMonthly ? 'Last 30 Days' : 'Last 7 Days'
 
   const tableRows: [string, number][] = [
-    ['📊 Total',       total],
-    ['🔴 Open',        open],
+    ['📊 Total', total],
+    ['🔴 Open', open],
     ['🟡 In Progress', inProgress],
-    ['🟢 Closed',      closed],
-    ['🚨 Priority',    priority],
+    ['🟢 Closed', closed],
+    ['🚨 Priority', priority],
   ]
 
   const greeting = isMonthly
-    ? `📅 <b>Monthly Snapshot — Last 30 Days</b>`
+    ? ` <b>Monthly Snapshot — Last 30 Days</b>`
     : `☀️ <b>Good Morning all!</b>`
 
   const parts: string[] = [
@@ -98,21 +98,21 @@ async function buildAndSendReport(days: number): Promise<void> {
 
   for (const cem of cemRows) {
     const cemTableRows: [string, number][] = [
-      ['📊 Total',       cem.total],
-      ['🔴 Open',        cem.open],
+      ['📊 Total', cem.total],
+      ['🔴 Open', cem.open],
       ['🟡 In Progress', cem.in_progress],
-      ['🟢 Closed',      cem.closed],
-      ['🚨 Priority',    cem.priority],
+      ['🟢 Closed', cem.closed],
+      ['🚨 Priority', cem.priority],
     ]
     parts.push(``, `<pre>${makeTable(cem.name, cemTableRows)}</pre>`)
   }
 
   await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-    chat_id:    CHAT_ID,
-    text:       parts.join('\n'),
+    chat_id: CHAT_ID,
+    text: parts.join('\n'),
     parse_mode: 'HTML',
   })
 }
 
-export async function sendDailyReport():   Promise<void> { return buildAndSendReport(7) }
+export async function sendDailyReport(): Promise<void> { return buildAndSendReport(7) }
 export async function sendMonthlyReport(): Promise<void> { return buildAndSendReport(30) }
