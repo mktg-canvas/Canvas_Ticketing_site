@@ -11,6 +11,7 @@ import clientRoutes from './routes/clients.routes'
 import ticketRoutes from './routes/tickets.routes'
 import categoryRoutes from './routes/categories.routes'
 import analyticsRoutes from './routes/analytics.routes'
+import telegramRoutes from './routes/telegram.routes'
 import { startCronJobs } from './cron'
 
 const app = express()
@@ -34,6 +35,7 @@ app.use('/api/clients', clientRoutes)
 app.use('/api/tickets', ticketRoutes)
 app.use('/api/categories', categoryRoutes)
 app.use('/api/analytics', analyticsRoutes)
+app.use('/api/telegram', telegramRoutes)
 
 // Global error handler — catches anything not handled by route-level try/catch
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
