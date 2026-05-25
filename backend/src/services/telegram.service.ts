@@ -116,3 +116,15 @@ async function buildAndSendReport(days: number): Promise<void> {
 
 export async function sendDailyReport(): Promise<void> { return buildAndSendReport(7) }
 export async function sendMonthlyReport(): Promise<void> { return buildAndSendReport(30) }
+
+export async function sendStartupNotification(nextDailyTime: string): Promise<void> {
+  if (!BOT_TOKEN || !CHAT_ID) return
+  const now = new Date()
+  const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })
+  const dateStr = now.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' })
+  await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    chat_id: CHAT_ID,
+    text: `✅ <b>Canvas server started</b>\n<i>${dateStr} · ${timeStr} IST</i>\n\nNext daily report: <b>${nextDailyTime}</b>`,
+    parse_mode: 'HTML',
+  })
+}
