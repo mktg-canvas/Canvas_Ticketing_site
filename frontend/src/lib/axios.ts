@@ -27,7 +27,11 @@ api.interceptors.response.use(
   (res) => res,
   async (error) => {
     const original = error.config as RetryConfig
-    if (error.response?.status === 401 && !original._retry) {
+    // Never apply the refresh-and-retry logic to auth endpoints — doing so on a
+    // failed login (401 wrong password) would trigger a refresh attempt, fail,
+    // redirect to /login, and swallow the real error message.
+    const isAuthRoute = original?.url?.includes('/auth/')
+    if (error.response?.status === 401 && !original._retry && !isAuthRoute) {
       original._retry = true
       if (refreshing) {
         return new Promise((resolve, reject) => {
@@ -53,7 +57,9 @@ api.interceptors.response.use(
         queue.forEach((e) => e.reject(refreshErr))
         queue = []
         useAuthStore.getState().logout()
-        window.location.href = '/login'
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login'
+        }
         return Promise.reject(refreshErr)
       } finally {
         refreshing = false

@@ -916,7 +916,7 @@ export default function Analytics() {
     if (!data) return
     setIsExporting(true)
     try {
-      // Capture just the chart as an image
+      // Capture the current chart as an image
       let chartImageUrl: string | undefined
       if (chartRef.current && chartData.length > 0) {
         const bg = getComputedStyle(document.documentElement).getPropertyValue('--color-bg1').trim() || '#ffffff'
@@ -936,6 +936,39 @@ export default function Analytics() {
       if (categoryId) activeFilters.push(`Category: ${categories.find((c: any) => c.id === categoryId)?.name ?? categoryId}`)
       if (cemId)      activeFilters.push(`CEM: ${cems.find((u: any) => u.id === cemId)?.name ?? cemId}`)
 
+      // Build all dimension sections for the PDF
+      function toFullRows(rows: any[]): import('../../components/shared/AnalyticsReportPDF').FullReportRow[] {
+        return rows.map(r => ({
+          name: r.name ?? r.month ?? '',
+          open: r.open,
+          in_progress: r.in_progress,
+          closed: r.closed,
+          total: r.total,
+          client_total: r.client_total ?? 0,
+          cem_total: r.cem_total ?? 0,
+          pctClosed: r.total > 0 ? Math.round((r.closed / r.total) * 100) : 0,
+        }))
+      }
+
+      function fmtMonthLabel(iso: string) {
+        const [y, m] = iso.split('-')
+        return new Date(Number(y), Number(m) - 1, 1).toLocaleString('en-IN', { month: 'short', year: '2-digit' })
+      }
+
+      const allSections: import('../../components/shared/AnalyticsReportPDF').ReportSection[] = [
+        { label: 'By CEM',          rows: toFullRows(data.byCem) },
+        { label: 'By Building',     rows: toFullRows(data.byBuilding) },
+        { label: 'By Category',     rows: toFullRows(data.byCategory) },
+        { label: 'By Client',       rows: toFullRows(data.byClient) },
+        {
+          label: 'Monthly Trend',
+          rows: toFullRows(
+            data.byMonth.map(r => ({ ...r, name: fmtMonthLabel(r.month) }))
+          ),
+        },
+        { label: 'By Source',       rows: toFullRows(data.bySource) },
+      ].filter(s => s.rows.length > 0)
+
       const [{ pdf }, { AnalyticsReportPDF }] = await Promise.all([
         import('@react-pdf/renderer'),
         import('../../components/shared/AnalyticsReportPDF'),
@@ -943,8 +976,7 @@ export default function Analytics() {
       const blob = await pdf(
         <AnalyticsReportPDF
           summary={data.summary}
-          tableRows={tableRows}
-          dimLabel={dimLabel}
+          allSections={allSections}
           dateLabel={activeDateLabel ?? ''}
           chartImageUrl={chartImageUrl}
           generatedAt={new Date().toLocaleString('en-IN')}
@@ -955,7 +987,7 @@ export default function Analytics() {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `canvas-analytics-${dimension}-${new Date().toISOString().slice(0, 10)}.pdf`
+      a.download = `canvas-analytics-${new Date().toISOString().slice(0, 10)}.pdf`
       a.click()
       URL.revokeObjectURL(url)
     } finally {
