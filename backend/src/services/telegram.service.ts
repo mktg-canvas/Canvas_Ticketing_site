@@ -2,32 +2,27 @@ import axios from 'axios'
 import { prisma } from '../lib/prisma'
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN!
-const CHAT_ID = process.env.TELEGRAM_CHAT_ID!
+const CHAT_ID   = process.env.TELEGRAM_CHAT_ID!
 
-// Table column widths (JS string length, not visual — emojis like 🔴🟡🟢📊 are 2 JS chars = 2 visual)
-const LABEL_W = 14  // fits "🟡 In Progress" exactly (2+1+11 = 14)
-const NUM_W = 5
-
-function center(text: string, width: number): string {
-  const pad = width - text.length
-  const l = Math.floor(pad / 2)
-  const r = pad - l
-  return ' '.repeat(Math.max(0, l)) + text + ' '.repeat(Math.max(0, r))
+function escHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
-function makeTable(title: string, rows: [string, number][]): string {
-  const top = `┌${'─'.repeat(24)}┐`
-  const header = `│ ${center(title, 23)}│`
-  const mid = `├${'─'.repeat(16)}┬${'─'.repeat(7)}┤`
-  const bottom = `└${'─'.repeat(16)}┴${'─'.repeat(7)}┘`
-  const row = (label: string, value: number) =>
-    `│ ${label.padEnd(LABEL_W)} │ ${String(value).padStart(NUM_W)} │`
-
-  return [top, header, mid, ...rows.map(([l, v]) => row(l, v)), bottom].join('\n')
+function toHandle(name: string): string {
+  // Derives @handle from the first word of the user's name (lowercased).
+  // If you want real Telegram pings, add a telegram_username column to users
+  // and use that here instead.
+  return '@' + name.trim().split(/\s+/)[0].toLowerCase()
 }
 
-function escHtml(text: string): string {
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
+
+async function sendMessage(text: string): Promise<void> {
+  await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    chat_id: CHAT_ID,
+    text,
+    parse_mode: 'HTML',
+  })
 }
 
 async function buildAndSendReport(days: number): Promise<void> {
@@ -53,9 +48,9 @@ async function buildAndSendReport(days: number): Promise<void> {
   for (const r of cemStatusRaw) {
     if (!cemMap.has(r.raised_by)) cemMap.set(r.raised_by, { open: 0, in_progress: 0, closed: 0, priority: 0 })
     const e = cemMap.get(r.raised_by)!
-    if (r.status === 'open') e.open += r._count.id
+    if (r.status === 'open')           e.open        += r._count.id
     else if (r.status === 'in_progress') e.in_progress += r._count.id
-    else if (r.status === 'closed') e.closed += r._count.id
+    else if (r.status === 'closed')    e.closed      += r._count.id
   }
   for (const r of cemPriorityRaw) {
     if (cemMap.has(r.raised_by)) cemMap.get(r.raised_by)!.priority = r._count.id
@@ -67,64 +62,50 @@ async function buildAndSendReport(days: number): Promise<void> {
       const d = cemMap.get(u.id)!
       return { name: u.name, total: d.open + d.in_progress + d.closed, ...d }
     })
+    .sort((a, b) => b.total - a.total)
 
   const now = new Date()
-  const dateStr = now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata' })
-  const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })
+  const dateStr = now.toLocaleDateString('en-IN', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    timeZone: 'Asia/Kolkata',
+  })
+  const timeStr = now.toLocaleTimeString('en-IN', {
+    hour: '2-digit', minute: '2-digit', hour12: true,
+    timeZone: 'Asia/Kolkata',
+  })
 
-  const isMonthly = days === 30
+  const isMonthly  = days === 30
   const rangeLabel = isMonthly ? 'Last 30 Days' : 'Last 7 Days'
+  const greeting   = isMonthly ? '📆 <b>Monthly Snapshot</b>' : '☀️ <b>Good Morning!</b>'
 
-  const tableRows: [string, number][] = [
-    ['📊 Total', total],
-    ['🔴 Open', open],
-    ['🟡 In Progress', inProgress],
-    ['🟢 Closed', closed],
-    ['🚨 Priority', priority],
-  ]
-
-  const greeting = isMonthly
-    ? ` <b>Monthly Snapshot — Last 30 Days</b>`
-    : `☀️ <b>Good Morning all!</b>`
-
-  const parts: string[] = [
+  // ── Message 1: overall summary ──────────────────────────────────────────
+  await sendMessage([
     greeting,
-    ``,
-    `📋 <b>Canvas Ticket Report</b>`,
+    '',
+    `📋 <b>Canvas Ticket Report</b>  ·  <i>${escHtml(rangeLabel)}</i>`,
     `<i>${escHtml(dateStr)} · ${timeStr}</i>`,
-    ``,
-    `<pre>${makeTable(`Overall · ${rangeLabel}`, tableRows)}</pre>`,
-  ]
+    '',
+    `📊 Total         <b>${total}</b>`,
+    `🔴 Open          <b>${open}</b>`,
+    `🟡 In Progress   <b>${inProgress}</b>`,
+    `🟢 Closed        <b>${closed}</b>`,
+    ...(priority > 0 ? [`🚨 Priority      <b>${priority}</b>`] : []),
+  ].join('\n'))
 
+  // ── One message per CEM ─────────────────────────────────────────────────
   for (const cem of cemRows) {
-    const cemTableRows: [string, number][] = [
-      ['📊 Total', cem.total],
-      ['🔴 Open', cem.open],
-      ['🟡 In Progress', cem.in_progress],
-      ['🟢 Closed', cem.closed],
-      ['🚨 Priority', cem.priority],
-    ]
-    parts.push(``, `<pre>${makeTable(cem.name, cemTableRows)}</pre>`)
+    await sleep(500) // stay well under Telegram's 1 msg/s per-chat limit
+    await sendMessage([
+      `👤 <b>${escHtml(cem.name)}</b>  ${toHandle(cem.name)}`,
+      '',
+      `📊 Total         <b>${cem.total}</b>`,
+      `🔴 Open          <b>${cem.open}</b>`,
+      `🟡 In Progress   <b>${cem.in_progress}</b>`,
+      `🟢 Closed        <b>${cem.closed}</b>`,
+      ...(cem.priority > 0 ? [`🚨 Priority      <b>${cem.priority}</b>`] : []),
+    ].join('\n'))
   }
-
-  await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-    chat_id: CHAT_ID,
-    text: parts.join('\n'),
-    parse_mode: 'HTML',
-  })
 }
 
-export async function sendDailyReport(): Promise<void> { return buildAndSendReport(7) }
+export async function sendDailyReport(): Promise<void>   { return buildAndSendReport(7) }
 export async function sendMonthlyReport(): Promise<void> { return buildAndSendReport(30) }
-
-export async function sendStartupNotification(nextDailyTime: string): Promise<void> {
-  if (!BOT_TOKEN || !CHAT_ID) return
-  const now = new Date()
-  const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })
-  const dateStr = now.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' })
-  await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-    chat_id: CHAT_ID,
-    text: `✅ <b>Canvas server started</b>\n<i>${dateStr} · ${timeStr} IST</i>\n\nNext daily report: <b>${nextDailyTime}</b>`,
-    parse_mode: 'HTML',
-  })
-}

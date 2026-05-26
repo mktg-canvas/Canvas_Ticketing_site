@@ -1,5 +1,5 @@
 import cron from 'node-cron'
-import { sendDailyReport, sendMonthlyReport, sendStartupNotification } from './services/telegram.service'
+import { sendDailyReport, sendMonthlyReport } from './services/telegram.service'
 
 function nextFireTime(expression: string, timezone: string): string {
   try {
@@ -45,15 +45,4 @@ export function startCronJobs(): void {
   const nextDaily = nextFireTime(dailySchedule, TZ)
   console.log(`[cron] Daily report  : ${dailySchedule} (${TZ}) — next: ${nextDaily}`)
   console.log(`[cron] Monthly report: ${monthlySchedule} — every Tuesday 9 AM (${TZ})`)
-
-  // Send a startup notification so Railway deployments are immediately verifiable
-  const botToken = process.env.TELEGRAM_BOT_TOKEN
-  const chatId   = process.env.TELEGRAM_CHAT_ID
-  if (botToken && chatId) {
-    sendStartupNotification(nextDaily).catch(err =>
-      console.error('[cron] Startup notification failed:', err?.message ?? err)
-    )
-  } else {
-    console.warn('[cron] TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not set — reports will not send')
-  }
 }
