@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://REPLACE_WITH_YOUR_CLOUD_RUN_URL/api/:path*"
+      "destination": "https://canvas-backend-336956940490.asia-south1.run.app/api/:path*"
     },
     {
       "source": "/:path*",
