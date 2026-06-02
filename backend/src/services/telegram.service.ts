@@ -2,7 +2,7 @@ import axios from 'axios'
 import { prisma } from '../lib/prisma'
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN!
-const CHAT_ID   = process.env.TELEGRAM_CHAT_ID!
+const CHAT_ID = process.env.TELEGRAM_CHAT_ID!
 
 function escHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -48,9 +48,9 @@ async function buildAndSendReport(days: number): Promise<void> {
   for (const r of cemStatusRaw) {
     if (!cemMap.has(r.raised_by)) cemMap.set(r.raised_by, { open: 0, in_progress: 0, closed: 0, priority: 0 })
     const e = cemMap.get(r.raised_by)!
-    if (r.status === 'open')           e.open        += r._count.id
+    if (r.status === 'open') e.open += r._count.id
     else if (r.status === 'in_progress') e.in_progress += r._count.id
-    else if (r.status === 'closed')    e.closed      += r._count.id
+    else if (r.status === 'closed') e.closed += r._count.id
   }
   for (const r of cemPriorityRaw) {
     if (cemMap.has(r.raised_by)) cemMap.get(r.raised_by)!.priority = r._count.id
@@ -74,9 +74,9 @@ async function buildAndSendReport(days: number): Promise<void> {
     timeZone: 'Asia/Kolkata',
   })
 
-  const isMonthly  = days === 30
+  const isMonthly = days === 30
   const rangeLabel = isMonthly ? 'Last 30 Days' : 'Last 7 Days'
-  const greeting   = isMonthly ? '📆 <b>Monthly Snapshot</b>' : '☀️ <b>Good Morning!</b>'
+  const greeting = isMonthly ? '📆 <b>Monthly Snapshot</b>' : '☀️ <b>Good Morning!</b>'
 
   // ── Message 1: overall summary ──────────────────────────────────────────
   await sendMessage([
@@ -107,5 +107,5 @@ async function buildAndSendReport(days: number): Promise<void> {
   }
 }
 
-export async function sendDailyReport(): Promise<void>   { return buildAndSendReport(7) }
+export async function sendDailyReport(): Promise<void> { return buildAndSendReport(7) }
 export async function sendMonthlyReport(): Promise<void> { return buildAndSendReport(30) }

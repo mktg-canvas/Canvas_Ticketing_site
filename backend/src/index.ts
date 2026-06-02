@@ -12,7 +12,6 @@ import ticketRoutes from './routes/tickets.routes'
 import categoryRoutes from './routes/categories.routes'
 import analyticsRoutes from './routes/analytics.routes'
 import telegramRoutes from './routes/telegram.routes'
-import { startCronJobs } from './cron'
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -43,9 +42,11 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   res.status(statusCode).json({ error: err.message || 'Internal server error' })
 })
 
+// NOTE: scheduling is handled by Cloud Scheduler (which POSTs to
+// /api/telegram/cron/:type), NOT by in-process node-cron — Cloud Run scales to
+// zero, so a process-level cron would never fire. See GCP_DEPLOYMENT.md.
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`)
-  startCronJobs()
 })
 
 export default app
