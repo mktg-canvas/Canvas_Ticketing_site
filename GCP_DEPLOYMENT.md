@@ -106,7 +106,7 @@ Add under **Container → Variables & Secrets**. Do **not** add `PORT` — Cloud
 | `CLIENT_URL` | Vercel frontend URL |
 | `TELEGRAM_BOT_TOKEN` | Same as Railway |
 | `TELEGRAM_CHAT_ID` | Same as Railway |
-| `CRON_SCHEDULE` | `0 9 * * *` |
+| `CRON_SECRET` | A long random string. Cloud Scheduler must send this in the `x-cron-secret` header (see Phase 7). Must match the value configured in the Scheduler jobs. |
 | `SMTP_HOST` | Same as Railway |
 | `SMTP_PORT` | Same as Railway |
 | `SMTP_USER` | Same as Railway |
@@ -160,6 +160,69 @@ After 1–2 days of stable GCP usage:
 
 1. Railway dashboard → backend service → **Delete service**
 2. Railway Postgres (if applicable) → delete separately
+
+---
+
+## Phase 7 — Telegram Reports via Cloud Scheduler
+
+> **Why:** Cloud Run scales to zero (Min instances = 0), so the old in-process
+> `node-cron` never fired — the container is dead at 9 AM. Cloud Scheduler runs
+> independently and wakes the service with an HTTP call, which is the correct
+> serverless pattern. (node-cron has been removed from the code.)
+
+The backend exposes `POST /api/telegram/cron/:type` (`type` = `daily` or `monthly`),
+guarded by the `x-cron-secret` header which must equal the `CRON_SECRET` env var.
+
+### 1. Enable the API (Cloud Shell)
+
+```bash
+gcloud services enable cloudscheduler.googleapis.com
+```
+
+### 2. Create the daily job (9:00 AM IST, every day)
+
+```bash
+gcloud scheduler jobs create http canvas-telegram-daily \
+  --location=asia-south1 \
+  --schedule="0 9 * * *" \
+  --time-zone="Asia/Kolkata" \
+  --uri="https://canvas-backend-xxxxxxxx-el.a.run.app/api/telegram/cron/daily" \
+  --http-method=POST \
+  --headers="x-cron-secret=YOUR_CRON_SECRET"
+```
+
+### 3. Create the weekly job (9:00 AM IST, every Tuesday — 30-day snapshot)
+
+```bash
+gcloud scheduler jobs create http canvas-telegram-weekly \
+  --location=asia-south1 \
+  --schedule="0 9 * * 2" \
+  --time-zone="Asia/Kolkata" \
+  --uri="https://canvas-backend-xxxxxxxx-el.a.run.app/api/telegram/cron/monthly" \
+  --http-method=POST \
+  --headers="x-cron-secret=YOUR_CRON_SECRET"
+```
+
+Replace `canvas-backend-xxxxxxxx-el.a.run.app` with your real Cloud Run URL and
+`YOUR_CRON_SECRET` with the same value you set for the `CRON_SECRET` env var.
+
+### 4. Test it immediately (don't wait until 9 AM)
+
+```bash
+gcloud scheduler jobs run canvas-telegram-daily --location=asia-south1
+```
+
+You should receive the Telegram report within a few seconds. You can also curl the
+endpoint directly:
+
+```bash
+curl -X POST https://canvas-backend-xxxxxxxx-el.a.run.app/api/telegram/cron/daily \
+  -H "x-cron-secret: YOUR_CRON_SECRET"
+```
+
+> Prefer the Console? **Cloud Scheduler → Create Job** → set the schedule, time
+> zone `Asia/Kolkata`, target **HTTP**, the URL above, method **POST**, and add a
+> header `x-cron-secret` = your secret.
 
 ---
 
